@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Web Socket</title>
+
+		<script src="./index.js" defer></script>
+		<link rel="stylesheet" href="./styles.css">
+	</head>
+	<body>
+		<canvas id="game"></canvas>
+		<canvas id="minimap" width="300" height="300"></canvas>
+
+		<div id="ui" class="show">
+			<div id="connect">
+				<label for="server-address">Server Address:</label>
+				<input type="text" id="server-address" />
+
+				<input type="button" id="connect-button" value="Connect" />
+			</div>
+
+			<div id="loading"></div>
+		</div>
+
+		<div id="mid"></div>
+	</body>
+</html>

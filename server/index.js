@@ -265,8 +265,8 @@ function getFreeClientId() {
 }
 
 function generateWorld() {
-	const width = 300;
-	const height = 300;
+	const width = 600;
+	const height = 600;
 	const world = [];
 	const seed = Math.floor(Math.random() * 1000);
 

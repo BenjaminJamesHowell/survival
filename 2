@@ -46,8 +46,8 @@ const zoomLimits = {
 	max: 128,
 };
 
-const worldWidth = 600;
-const worldHeight = 600;
+const worldWidth = 300;
+const worldHeight = 300;
 
 
 canvas.width = innerWidth;
@@ -62,8 +62,7 @@ document.getElementById("connect-button").addEventListener("click", () => {
 	openWebSocket(server)
 		.then(() => {
 			inGame = true;
-			minimapCanvas.width = worldWidth;
-			minimapCanvas.height = worldHeight;
+			minimap = createMinimap();
 			document.getElementById("connect").style.display = "none";
 			document.getElementById("ui").classList.remove("show");
 			setInterval(sendUpdates, sendUpdateIntervalMs);
@@ -229,6 +228,19 @@ function drawRect(x, y, w, h, c) {
 	ctx.fillRect(x, canvas.height - y, w, -h);
 }
 
+function createMinimap() {
+	const minimap = [];
+	for (let x = 0; x < 300; x++) {
+		minimap[x] = [];
+
+		for (let y = 0; y < 300; y++) {
+			minimap[x][y] = undefined;
+		}
+	}
+
+	return minimap;
+}
+
 function fillMinimap() {
 	for (let x = 0; x < sorroundings.length; x++) {
 		for (let y = 0; y < sorroundings[x].length; y++) {
@@ -258,11 +270,13 @@ function renderMinimap() {
 				temperature,
 			);
 
-			minimapCtx.fillRect(x + sorroundingsBottomLeft.x, worldHeight - (y + sorroundingsBottomLeft.y), 1, -1);
+			minimapCtx.fillRect(x + sorroundingsBottomLeft.x, 300 - (y + sorroundingsBottomLeft.y), 1, -1);
 		}
 	}
-	minimapCanvas.style.left = `${150 - camera.x}px`;
-	minimapCanvas.style.top = `${150 - (600 - camera.y)}px`;
+	minimapCanvas.width = worldWidth;
+	minimapCanvas.height = worldHeight;
+	minimapCanvas.style.left = `${-camera.x}px`;
+	minimapCanvas.style.top = "500px";//`${-camera.y}px`;
 }
 
 function decodeSorroundings(input) {

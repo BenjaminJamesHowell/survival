@@ -39,8 +39,6 @@ const minimapCanvas = document.getElementById("minimap");
 const minimapCtx = minimapCanvas.getContext("2d");
 let sorroundingsBounds;
 let tileSize = 32;
-// let minimap;
-let minimapChanges = [];
 const zoomLimits = {
 	min: 24,
 	max: 128,
@@ -129,8 +127,8 @@ function frame() {
 
 	for (let x = 0; x < sorroundings.length; x++) {
 		for (let y = 0; y < sorroundings[x].length; y++) {
-			const { type, humidity, temperature } = sorroundings[x][y];
-			const colour = getTileColour(type, humidity, temperature);
+			const [r, g, b] = sorroundings[x][y];
+			const colour = `rgb(${r}, ${g}, ${b})`;
 
 			drawRect(
 				(x + sorroundingsBottomLeft.x - camera.x) * tileSize + cameraOffset.x,
@@ -177,86 +175,16 @@ function frame() {
 	requestAnimationFrame(frame);
 }
 
-const colours = {
-	grass: [0, 255, 0],
-	snow: [255, 255, 255],
-	sand: [255, 255, 0],
-};
-
-function colourToString([a1, a2, a3]) {
-	return `rgb(${a1}, ${a2}, ${a3})`;
-}
-
-function blendChannel(a, b, weight) {
-	return Math.round(a * weight + b * (1 - weight));
-}
-
-function blendColours([a1, a2, a3], [b1, b2, b3], weight) {
-	return [
-		blendChannel(a1, b1, weight),
-		blendChannel(a2, b2, weight),
-		blendChannel(a3, b3, weight),
-	];
-}
-
-function getTileColour(tile, _, temperature) {
-	if (tile === 0) {
-		return "blue";
-	}
-
-	const temperaturePercent = temperature / 255;
-	if (tile === 1) {
-		if (temperaturePercent > 0.5) {
-			return colourToString(blendColours(
-				colours.sand,
-				colours.grass,
-				Math.floor(temperaturePercent * 20) / 20 * 2 - 1,
-			));
-		}
-
-		return colourToString(blendColours(
-			colours.grass,
-			colours.snow,
-			Math.floor(temperaturePercent * 20) / 20 * 2,
-		));
-	}
-
-	return "black";
-}
-
 function drawRect(x, y, w, h, c) {
 	ctx.fillStyle = c;
 	ctx.fillRect(x, canvas.height - y, w, -h);
 }
 
-function fillMinimap() {
-	for (let x = 0; x < sorroundings.length; x++) {
-		for (let y = 0; y < sorroundings[x].length; y++) {
-			const { type, humidity, temperature } = sorroundings[x][y];
-			if (type === 2) {
-				continue;
-			}
-
-			minimapChanges.push({
-				x: sorroundingsBottomLeft.x + x,
-				y: sorroundingsBottomLeft.y + y,
-				type,
-				humidity,
-				temperature,
-			});
-		}
-	}
-}
-
 function renderMinimap() {
 	for (let x = 0; x < sorroundings.length; x++) {
 		for (let y = 0; y < sorroundings[x].length; y++) {
-			const { type, humidity, temperature } = sorroundings[x][y];
-			minimapCtx.fillStyle = getTileColour(
-				type,
-				humidity,
-				temperature,
-			);
+			const [r, g, b] = sorroundings[x][y];
+			minimapCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
 
 			minimapCtx.fillRect(x + sorroundingsBottomLeft.x, worldHeight - (y + sorroundingsBottomLeft.y), 1, -1);
 		}
@@ -268,9 +196,9 @@ function renderMinimap() {
 function decodeSorroundings(input) {
 	let x = 0;
 	let y = 0;
-	let type = "";
-	let humidity = "";
-	let temperature = "";
+	let r = "";
+	let g = "";
+	let b = "";
 	sorroundings = [];
 	let height = 24 * 2;
 
@@ -279,32 +207,32 @@ function decodeSorroundings(input) {
 			x += 1;
 			y = 0;
 		}
-		if (type.length !== 3) {
-			type += char;
+		if (r.length !== 3) {
+			r += char;
 			continue;
 		}
-		if (humidity.length !== 3) {
-			humidity += char;
+		if (g.length !== 3) {
+			g += char;
 			continue;
 		}
-		if (temperature.length !== 2) {
-			temperature += char;
+		if (b.length !== 2) {
+			b += char;
 			continue;
 		}
 
-		temperature += char;
+		b += char;
 		if (sorroundings[x] === undefined) {
 			sorroundings[x] = [];
 		}
-		sorroundings[x][y] = {
-			type: parseInt(type),
-			humidity: parseInt(humidity),
-			temperature: parseInt(temperature),
-		};
+		sorroundings[x][y] = [
+			parseInt(r),
+			parseInt(g),
+			parseInt(b),
+		];
 		y++;
-		type = "";
-		humidity = "";
-		temperature = "";
+		r = "";
+		g = "";
+		b = "";
 	}
 
 	return sorroundings;

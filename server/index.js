@@ -95,20 +95,16 @@ function sendUpdates() {
 				max: Math.ceil(clients[clientId].position.y / 1) * 1 + fov.height,
 			},
 		};
-		const defaultY = { type: 2, humidity: 0, temperature: 0 }; // TODO:
-		const defaultX = new Array(worldHeight).fill({ type: 2, humidity: 0, temperature: 0 }); // TODO:
+		const defaultY = { type: 2, light: 255, humidity: 0, temperature: 0 }; // TODO:
+		const defaultX = new Array(worldHeight).fill(defaultY); // TODO:
 		const sorroundings =
 			sliceWithDefault(world, sorroundingsBounds.x.min, sorroundingsBounds.x.max, defaultX)
 			.map(c => sliceWithDefault(c, sorroundingsBounds.y.min, sorroundingsBounds.y.max, defaultY))
-			.map(c => c.map(tile => {
-				const type = tile.type.toString().padStart(3, "0");
-				const humidity = tile.humidity.toString().padStart(3, "0");
-				const temperature = tile.temperature.toString().padStart(3, "0");
-
-				return `${type}${humidity}${temperature}`;
-			}).join(""))
+			.map(c => c.map(tile =>
+				colourToString(getTileColour(tile.type, getTileLight(tile), tile.humidity, tile.temperature))
+			).join(""))
 			.join("");
-
+		
 		const data = {
 			status: "ok",
 			playerLocations,
@@ -380,4 +376,63 @@ function sliceWithDefault(arr, min, max, def) {
 	}
 
 	return result;
+}
+
+function getTileLight({}) {
+	return 255;
+}
+
+function colourToString([r, g, b]) {
+	return `${r.toString().padStart(3, "0")}${g.toString().padStart(3, "0")}${b.toString().padStart(3, "0")}`;
+}
+
+function adjustTileLight(colour, light) {
+	const lightPercent = light / 255;
+
+	return colour.map(channel => Math.floor(channel * lightPercent));
+}
+
+function blendChannel(a, b, weight) {
+	return Math.round(a * weight + b * (1 - weight));
+}
+
+function blendColours([r1, g1, b1], [r2, g2, b2], weight) {
+	return [
+		blendChannel(r1, r2, weight),
+		blendChannel(g1, g2, weight),
+		blendChannel(b1, b2, weight),
+	];
+}
+
+const colours = {
+	water: [0,     0, 255],
+	grass: [0,   255,   0],
+	sand:  [255, 255,   0],
+	snow:  [255, 255, 255],
+	void:  [0,     0,   0],
+};
+function getTileColour(type, light, humidity, temperature) {
+	if (type === 0) {
+		return adjustTileLight(colours.water, light);
+	}
+
+	const temperaturePercent = temperature / 255;
+
+	if (type === 1) {
+		if (temperaturePercent > 0.5) {
+			return adjustTileLight(blendColours(
+				colours.sand,
+				colours.grass,
+				Math.floor(temperaturePercent * 20) / 20 * 2 - 1,
+			), light);
+		}
+
+		return adjustTileLight(blendColours(
+			colours.grass,
+			colours.snow,
+			Math.floor(temperaturePercent * 20) / 20 * 2
+		), light);
+	}
+
+	return colours.void;
 }

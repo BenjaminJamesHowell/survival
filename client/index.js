@@ -147,11 +147,18 @@ function frame() {
 
 
 		drawRect(
+			(player.position.x - camera.x) * tileSize + cameraOffset.x - tileSize / 2 - 0.1 * tileSize,
+			(player.position.y - camera.y) * tileSize + cameraOffset.y - tileSize / 2 - 0.1 * tileSize,
+			tileSize + 0.2 * tileSize,
+			tileSize + 0.2 * tileSize,
+			"black",
+		);
+		drawRect(
 			(player.position.x - camera.x) * tileSize + cameraOffset.x - tileSize / 2,
 			(player.position.y - camera.y) * tileSize + cameraOffset.y - tileSize / 2,
 			tileSize,
 			tileSize,
-			"red",
+			`rgb(${player.colour[0]}, ${player.colour[1]}, ${player.colour[2]})`,
 		);
 	}
 

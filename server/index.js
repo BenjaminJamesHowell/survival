@@ -21,7 +21,18 @@ const defaultClient = {
 		KeyS: false,
 		KeyD: false,
 	},
+	colour: [0, 0, 0],
 };
+
+const playerColours = shuffle([
+	[128, 223,  96],
+	[223,  96, 223],
+	[159,  96, 223],
+	[ 96, 191, 223],
+	[ 96, 128, 223],
+	[223, 223,  96],
+	[223,  96,  96],
+]);
 
 const playerAcceleration = 0.01;
 let clients = new Array(10).fill(undefined);
@@ -29,6 +40,8 @@ let sockets = new Array(10).fill(undefined);
 let wPressed = [false, false, false, false];
 let lastTickStart = Date.now();
 let delta = 0;
+let naturalLight = 1;
+let lightSources = new Array(10).fill(undefined);
 const { world, height: worldHeight, width: worldWidth } = getWorld();
 const doCollision = true;
 
@@ -57,6 +70,7 @@ server.on("connection", socket => {
 
 	sockets[clientId] = socket;
 	clients[clientId] = structuredClone(defaultClient);
+	clients[clientId].colour = playerColours[clientId];
 
 	socket.on("message", msg => {
 		receiveUpdate(clientId, msg)
@@ -77,7 +91,7 @@ function sendUpdates() {
 			return undefined;
 		}
 
-		return { position: client.position };
+		return { colour: client.colour, position: client.position };
 	});
 	for (const clientId in sockets) {
 		if (sockets[clientId] === undefined) {
@@ -85,6 +99,10 @@ function sendUpdates() {
 		}
 
 		const socket = sockets[clientId];
+		const sorroundingsBottomLeft = {
+			x: Math.ceil(clients[clientId].position.x) - fov.width,
+			y: Math.ceil(clients[clientId].position.y) - fov.height,
+		};
 		const sorroundingsBounds = {
 			x: {
 				min: Math.ceil(clients[clientId].position.x / 1) * 1 - fov.width,
@@ -100,8 +118,8 @@ function sendUpdates() {
 		const sorroundings =
 			sliceWithDefault(world, sorroundingsBounds.x.min, sorroundingsBounds.x.max, defaultX)
 			.map(c => sliceWithDefault(c, sorroundingsBounds.y.min, sorroundingsBounds.y.max, defaultY))
-			.map(c => c.map(tile =>
-				colourToString(getTileColour(tile.type, getTileLight(tile), tile.humidity, tile.temperature))
+			.map((c, x) => c.map((tile, y) =>
+				colourToString(getTileColour(tile.type, getTileLight(x + sorroundingsBottomLeft.x, y + sorroundingsBottomLeft.y, tile), tile.humidity, tile.temperature))
 			).join(""))
 			.join("");
 		
@@ -110,10 +128,7 @@ function sendUpdates() {
 			playerLocations,
 			sorroundingsBounds,
 			sorroundings,
-			sorroundingsBottomLeft: {
-				x: Math.ceil(clients[clientId].position.x) - fov.width,
-				y: Math.ceil(clients[clientId].position.y) - fov.height,
-			},
+			sorroundingsBottomLeft,
 			camera: clients[clientId].position,
 			clientId,
 		};
@@ -133,10 +148,23 @@ function tick() {
 	delta = now - lastTickStart;
 	lastTickStart = Date.now();
 
+	const hour = new Date().getHours();
+	// This equation plots a curve that peaks at noon and hits 0 at
+	// midnight.
+	// light(time) = -(1/12 time - 1)^2 + 1
+	naturalLight = Math.max(0, Math.min(1, -((1/12 * hour - 1) ** 2) + 0.8));
+
 	for (let clientId = 0; clientId < clients.length; clientId++) {
 		if (clients[clientId] === undefined) {
+			lightSources[clientId] = undefined;
 			continue;
 		}
+
+		lightSources[clientId] = {
+			x: clients[clientId].position.x,
+			y: clients[clientId].position.y,
+			intensity: 1,
+		};
 
 		const acceleration = {
 			x: 0,
@@ -378,8 +406,22 @@ function sliceWithDefault(arr, min, max, def) {
 	return result;
 }
 
-function getTileLight({}) {
-	return 255;
+function getTileLight(x, y, {}) {
+	let light = naturalLight;
+
+	for (const lightSource of lightSources) {
+		if (lightSource === undefined) {
+			continue;
+		}
+
+		const { x: sourceX, y: sourceY, intensity } = lightSource;
+		let xDistance = Math.abs(x - sourceX);
+		let yDistance = Math.abs(y - sourceY);
+		let distance = xDistance + yDistance;
+		light += intensity / distance;
+	}
+
+	return Math.min(255, light * 255);
 }
 
 function colourToString([r, g, b]) {
@@ -435,4 +477,18 @@ function getTileColour(type, light, humidity, temperature) {
 	}
 
 	return colours.void;
+}
+
+function shuffle(arr) {
+	let i = arr.length;
+	let randomI;
+
+	while (i > 0) {
+		randomI = Math.floor(Math.random() * i);
+		i--;
+
+		[arr[i], arr[randomI]] = [arr[randomI], arr[i]];
+	}
+
+	return arr;
 }

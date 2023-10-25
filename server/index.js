@@ -21,23 +21,13 @@ const defaultClient = {
 		KeyS: false,
 		KeyD: false,
 	},
-	colour: [0, 0, 0],
+	colour: 0,
 };
 
-const playerColours = shuffle([
-	[128, 223,  96],
-	[223,  96, 223],
-	[159,  96, 223],
-	[ 96, 191, 223],
-	[ 96, 128, 223],
-	[223, 223,  96],
-	[223,  96,  96],
-]);
 
 const playerAcceleration = 0.01;
 let clients = new Array(10).fill(undefined);
 let sockets = new Array(10).fill(undefined);
-let wPressed = [false, false, false, false];
 let lastTickStart = Date.now();
 let delta = 0;
 let naturalLight = 1;
@@ -70,7 +60,6 @@ server.on("connection", socket => {
 
 	sockets[clientId] = socket;
 	clients[clientId] = structuredClone(defaultClient);
-	clients[clientId].colour = playerColours[clientId];
 
 	socket.on("message", msg => {
 		receiveUpdate(clientId, msg)
@@ -139,8 +128,8 @@ function sendUpdates() {
 
 function receiveUpdate(clientId, msg) {
 	const data = JSON.parse(msg.toString());
-	wPressed[clientId] = data.keys.KeyW;
 	clients[clientId].keys = data.keys;
+	clients[clientId].colour = data.colour;
 }
 
 function tick() {
@@ -479,16 +468,3 @@ function getTileColour(type, light, humidity, temperature) {
 	return colours.void;
 }
 
-function shuffle(arr) {
-	let i = arr.length;
-	let randomI;
-
-	while (i > 0) {
-		randomI = Math.floor(Math.random() * i);
-		i--;
-
-		[arr[i], arr[randomI]] = [arr[randomI], arr[i]];
-	}
-
-	return arr;
-}

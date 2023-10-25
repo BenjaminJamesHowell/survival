@@ -27,6 +27,7 @@ let clientId = -1;
 let socket;
 let playerLocations = [];
 let sorroundings = [];
+let colour;
 let sorroundingsBottomLeft = {
 	x: 0,
 	y: 0,
@@ -51,6 +52,20 @@ const worldHeight = 600;
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
+const playerColours = [
+	"rgb(223,  96,  96)", // red
+	"rgb(223, 223,  96)", // yellow
+	"rgb(128, 223,  96)", // green
+	"rgb( 96, 191, 223)", // light blue
+	"rgb( 96, 128, 223)", // blue
+	"rgb(159,  96, 223)", // purple
+	"rgb(223,  96, 223)", // pink
+];
+
+Array.from(document.querySelectorAll("#colours label")).map(
+	(label, i) => label.style.backgroundColor = playerColours[i],
+);
+
 document.getElementById("connect-button").addEventListener("click", () => {
 	if (inGame) {
 		return;
@@ -63,7 +78,18 @@ document.getElementById("connect-button").addEventListener("click", () => {
 			minimapCanvas.width = worldWidth;
 			minimapCanvas.height = worldHeight;
 			document.getElementById("connect").style.display = "none";
+			document.getElementById("minimap-border").style.display = "block";
 			document.getElementById("ui").classList.remove("show");
+			// const colourId = document.querySelectorAll("#colours input").filter(a => a.checked);
+			const colourInputs = document.querySelectorAll("#colours input");
+			colour = 0;
+			for (let i = 0; i < colourInputs.length; i++) {
+				if (colourInputs[i].checked) {
+					colour = i;
+					break;
+				}
+			}
+
 			setInterval(sendUpdates, sendUpdateIntervalMs);
 			setInterval(renderMinimap, 1000);
 			requestAnimationFrame(frame);
@@ -101,7 +127,8 @@ async function openWebSocket(server) {
 
 function sendUpdates() {
 	const data = {
-		keys
+		keys,
+		colour,
 	};
 	socket.send(JSON.stringify(data));
 }
@@ -147,10 +174,10 @@ function frame() {
 
 
 		drawRect(
-			(player.position.x - camera.x) * tileSize + cameraOffset.x - tileSize / 2 - 0.1 * tileSize,
-			(player.position.y - camera.y) * tileSize + cameraOffset.y - tileSize / 2 - 0.1 * tileSize,
-			tileSize + 0.2 * tileSize,
-			tileSize + 0.2 * tileSize,
+			(player.position.x - camera.x) * tileSize + cameraOffset.x - tileSize / 2 - 0.025 * tileSize,
+			(player.position.y - camera.y) * tileSize + cameraOffset.y - tileSize / 2 - 0.025 * tileSize,
+			tileSize + 0.05 * tileSize,
+			tileSize + 0.05 * tileSize,
 			"black",
 		);
 		drawRect(
@@ -158,7 +185,7 @@ function frame() {
 			(player.position.y - camera.y) * tileSize + cameraOffset.y - tileSize / 2,
 			tileSize,
 			tileSize,
-			`rgb(${player.colour[0]}, ${player.colour[1]}, ${player.colour[2]})`,
+			playerColours[player.colour],
 		);
 	}
 
@@ -244,3 +271,4 @@ function decodeSorroundings(input) {
 
 	return sorroundings;
 }
+

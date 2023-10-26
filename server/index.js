@@ -12,8 +12,8 @@ const defaultClient = {
 		y: 0,
 	},
 	position: {
-		x: 100,
-		y: 100,
+		x: 1,
+		y: 1,
 	},
 	keys: {
 		KeyW: false,
@@ -30,6 +30,7 @@ let clients = new Array(10).fill(undefined);
 let sockets = new Array(10).fill(undefined);
 let lastTickStart = Date.now();
 let delta = 0;
+let tps = 0;
 let naturalLight = 1;
 let lightSources = new Array(10).fill(undefined);
 const { world, height: worldHeight, width: worldWidth } = getWorld();
@@ -55,8 +56,10 @@ server.on("connection", socket => {
 			type: "serverFull",
 		};
 		socket.send(JSON.stringify(data));
+		console.log("New connection: server full");
 		return;
 	}
+	console.log("New connection: player ", clientId);
 
 	sockets[clientId] = socket;
 	clients[clientId] = structuredClone(defaultClient);
@@ -68,8 +71,11 @@ server.on("connection", socket => {
 	socket.on("close", () => {
 		sockets[clientId] = undefined;
 		clients[clientId] = undefined;
+
+		console.log("Connection closed: ", clientId);
 	});
 });
+console.log("Listening for connections");
 
 setInterval(tick, tickIntervalMs);
 setInterval(sendUpdates, sendUpdateIntervalMs);
@@ -120,6 +126,7 @@ function sendUpdates() {
 			sorroundingsBottomLeft,
 			camera: clients[clientId].position,
 			clientId,
+			tps,
 		};
 
 		socket.send(JSON.stringify(data));
@@ -136,6 +143,7 @@ function tick() {
 	let now = Date.now();
 	delta = now - lastTickStart;
 	lastTickStart = Date.now();
+	tps = 1000 / delta;
 
 	const hour = new Date().getHours();
 	// This equation plots a curve that peaks at noon and hits 0 at
@@ -278,8 +286,8 @@ function getFreeClientId() {
 }
 
 function generateWorld() {
-	const width = 600;
-	const height = 600;
+	const width = 255;
+	const height = 255;
 	const world = [];
 	const seed = Math.floor(Math.random() * 1000);
 
@@ -314,9 +322,9 @@ function generateWorld() {
 }
 
 function getTile(x, y, terrainNoise, humidityNoise, temperatureNoise) {
-	const isLand = terrainNoise.GetNoise(x / 2, y / 2) >= -0.5;
-	const humidity = Math.floor((humidityNoise.GetNoise(x / 2, y / 2) + 1) * (255 / 2));
-	const temperature = Math.floor((temperatureNoise.GetNoise(x / 2, y / 2) + 1) * (255 / 2));
+	const isLand = terrainNoise.GetNoise(x / 4, y / 4) >= -0.3;
+	const humidity = Math.floor((humidityNoise.GetNoise(x / 4, y / 4) + 1) * (255 / 2));
+	const temperature = Math.floor((temperatureNoise.GetNoise(x / 4, y / 4) + 1) * (255 / 2));
 
 	return {
 		type: isLand ? 1 : 0,
@@ -326,55 +334,98 @@ function getTile(x, y, terrainNoise, humidityNoise, temperatureNoise) {
 }
 
 function getWorld() {
-	if (true || !existsSync("./world")) {
+	if (!existsSync("./world")) {
+		console.log("Generating world");
 		const { world, width, height } = generateWorld();
-		// const save = encodeSave(world, width, height);
-		// writeFileSync("./world", save);
+		const save = encodeSave(world, width, height);
+
+		console.log("Saving world");
+		writeFileSync("./world", save);
 
 		return { world, height, width };
 	}
+	console.log("Loading saved world");
 	const save = readFileSync("./world");
-	const { world: rawWorld, height, width }= decodeSave(save);
+	const { world: rawWorld, height, width } = decodeSave(save);
 	const world = [];
-	for (let i = 0; i < rawWorld.length; i++) {
-		const y = i % width;
-		const x = Math.floor(i / width);
+	let current = {
+		type: undefined,
+		humidity: undefined,
+		temperature: undefined,
+	};
+	let y = 0;
+	let x = 0;
+
+	for (const byte of rawWorld) {
+		if (current.type === undefined) {
+			current.type = byte;
+			continue;
+		}
+
+		if (current.humidity === undefined) {
+			current.humidity = byte;
+				continue;
+		}
+
+		current.temperature = byte;
 
 		if (world[x] === undefined) {
 			world[x] = [];
 		}
-
-		world[x][y] = rawWorld[i];
+		world[x][y] = structuredClone(current);
+		current.type = undefined;
+		current.humidity = undefined;
+		current.temperature = undefined;
+		y++;
+		if (y === height) {
+			y = 0;
+			x++;
+		}
 	}
 
+	console.log("World loaded");
 	return { world, height, width };
 }
 
 function encodeSave(world, width, height) {
-	return Buffer.from([width, height, ...world.flatMap(x => x)]);
+	return Buffer.from([
+		width,
+		height,
+		...world.flatMap(col =>
+			col.flatMap(({ type, humidity, temperature }) =>
+				[type, humidity, temperature]
+			)
+		),
+	]);
 }
 
 function decodeSave(save) {
 	const bytes = new Uint8Array(save);
 	if (bytes.length < 2) {
+		console.log("Expected length: ", ">2 bytes");
+		console.log("Actual length: ", bytes.length);
 		throw new Error("No world sizes found in save file (it is probably corrupted)");
 	}
 
-	const [width, height] = bytes;
-	const totalSize = width * height;
+	const [width, height, ...data] = bytes;
+	const totalSize = width * height * 3;
 
-	if (bytes.length < totalSize + 2) {
+	if (data < totalSize) {
+		console.log("Expected length: ", totalSize);
+		console.log("Actual length: ", bytes.length);
 		throw new Error("The world data in the save file is incomplete (it is probably corrupted)");
 	}
 
-	if (bytes.length > totalSize + 2) {
+	if (data > totalSize) {
+		console.log("Expected length: ", totalSize);
+		console.log("Actual length: ", bytes.length);
 		throw new Error("There is too much world data in your save file (it is probably corrupted)");
 	}
 
 	return {
 		width,
 		height,
-		world: bytes.subarray(2)
+		world: data,
 	};
 }
 

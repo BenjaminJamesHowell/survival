@@ -11,8 +11,19 @@
 	</head>
 	<body>
 		<canvas id="game"></canvas>
-		<div id="minimap-border">
-			<canvas id="minimap"></canvas>
+
+		<div id="game-ui">
+			<div class="small" id="minimap-border">
+				<canvas id="minimap"></canvas>
+			</div>
+
+			<button id="fullscreen-minimap-toggle">
+				<i class="bi bi-geo-alt-fill"></i>
+			</button>
+			<div id="info">
+				FPS: <span id="fps">000</span>
+				TPS: <span id="tps">000</span>
+			</div>
 		</div>
 
 		<div id="ui" class="show">

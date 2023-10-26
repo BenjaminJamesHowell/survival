@@ -37,16 +37,24 @@ let sorroundingsBottomLeft = {
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const minimapCanvas = document.getElementById("minimap");
+const minimapBorder = document.getElementById("minimap-border");
+let isFullscreenMap = false;
+const fpsCounter = document.getElementById("fps");
+const tpsCounter = document.getElementById("tps");
 const minimapCtx = minimapCanvas.getContext("2d");
 let sorroundingsBounds;
 let tileSize = 32;
+let delta = 0;
+let lastFrameStart = 0;
+let fps = 0;
+let tps = 0;
 const zoomLimits = {
 	min: 24,
 	max: 128,
 };
 
-const worldWidth = 600;
-const worldHeight = 600;
+const worldWidth = 1200;
+const worldHeight = 1200;
 
 
 canvas.width = innerWidth;
@@ -78,9 +86,8 @@ document.getElementById("connect-button").addEventListener("click", () => {
 			minimapCanvas.width = worldWidth;
 			minimapCanvas.height = worldHeight;
 			document.getElementById("connect").style.display = "none";
-			document.getElementById("minimap-border").style.display = "block";
-			document.getElementById("ui").classList.remove("show");
-			// const colourId = document.querySelectorAll("#colours input").filter(a => a.checked);
+			document.getElementById("game-ui").style.display = "block";
+			document.getElementById("ui").classList.add("hide");
 			const colourInputs = document.querySelectorAll("#colours input");
 			colour = 0;
 			for (let i = 0; i < colourInputs.length; i++) {
@@ -89,6 +96,15 @@ document.getElementById("connect-button").addEventListener("click", () => {
 					break;
 				}
 			}
+
+			document.querySelector("#fullscreen-minimap-toggle")
+				.addEventListener("click", toggleMapFullscreen);
+
+			addEventListener("keypress", e => {
+				if (e.code === "KeyM") {
+					toggleMapFullscreen();
+				}
+			});
 
 			setInterval(sendUpdates, sendUpdateIntervalMs);
 			setInterval(renderMinimap, 1000);
@@ -145,11 +161,20 @@ function receiveUpdate(msg) {
 	sorroundingsBounds = data.sorroundingsBounds;
 	camera = data.camera;
 	clientId = data.clientId;
+	tps = data.tps;
 
 	decodeSorroundings(data.sorroundings);
 }
 
 function frame() {
+	const now = Date.now();
+	delta = now - lastFrameStart;
+	lastFrameStart = Date.now();
+	fps = 1000 / delta;
+
+	fpsCounter.innerText = Math.round(fps).toString().padStart(3, "0");
+	tpsCounter.innerText = Math.round(tps).toString().padStart(3, "0");
+
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 	for (let x = 0; x < sorroundings.length; x++) {
@@ -224,7 +249,7 @@ function renderMinimap() {
 		}
 	}
 	minimapCanvas.style.left = `${150 - camera.x}px`;
-	minimapCanvas.style.top = `${150 - (600 - camera.y)}px`;
+	minimapCanvas.style.top = `${150 - (worldHeight - camera.y)}px`;
 }
 
 function decodeSorroundings(input) {
@@ -270,5 +295,18 @@ function decodeSorroundings(input) {
 	}
 
 	return sorroundings;
+}
+
+function toggleMapFullscreen() {
+	console.log("hello", isFullscreenMap);
+	isFullscreenMap = !isFullscreenMap;
+
+	if (isFullscreenMap) {
+		minimapBorder.classList.add("big");
+		minimapBorder.classList.remove("small");
+	} else {
+		minimapBorder.classList.remove("big");
+		minimapBorder.classList.add("small");
+	}
 }
 

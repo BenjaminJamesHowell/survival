@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap');
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css");
 
 * {
 
@@ -13,21 +14,20 @@ body {
 }
 
 #ui {
-	opacity: 0;
+	opacity: 1;
 	position: fixed;
 	top: 0;
 	left: 0;
 	width: 100vw;
 	height: 100vh;
 	background: #000000EE;
-
 	transition: opacity 0.5s;
 	color: white;
 	padding-top: 25vh;
 }
 
-#ui.show {
-	opacity: 1;
+#ui.hide {
+	opacity: 0;
 }
 
 #connect {
@@ -101,20 +101,71 @@ div input:checked~label {
 	top: calc(50vh - 1px);
 }
 
-#minimap {
+button {
+	outline: none;
+	border: none;
+}
+
+#minimap-border.small #minimap {
 	position: relative;
 	top: 0;
 	left: 0;
 }
 
-#minimap-border {
+#minimap-border.big #minimap {
+	padding: 5px;
+	width: 100%;
+	height: 100%;
+}
+
+#game-ui {
 	display: none;
+}
+
+#minimap-border {
+	background: #000E;
+	margin: 5px;
 	position: fixed;
+	z-index: 2;
 	top: 0;
-	left: 0;
+}
+
+#minimap-border.small {
+	overflow: hidden;
 	width: 300px;
 	height: 300px;
-	background: #333E;
-	overflow: hidden;
+}
+
+#minimap-border.big {
+	width: calc(100vw - 315px);
+	height: calc(100vh - 10px);
+	left: 305px;
+}
+
+#fullscreen-minimap-toggle {
+	cursor: pointer;
+	width: 30px;
+	font-size: 18px;
+	color: white;
+	height: 30px;
+	background: #000E;
+	position: fixed;
+	z-index: 2;
+	top: 305px;
+	left: 0;
+	margin: 5px;
+}
+
+#info {
+	width: 265px;
+	height: 30px;
+	background: #000E;
+	position: fixed;
+	z-index: 2;
+	top: 305px;
+	left: 35px;
+	margin: 5px;
+	padding: 5px;
+	color: white;
 }
 

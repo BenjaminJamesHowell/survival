@@ -1,6 +1,7 @@
 import { WebSocketServer } from "ws";
 import FastNoiseLite from "fastnoise-lite";
 import { readFileSync, existsSync, writeFileSync } from "fs";
+import { createInterface } from "readline";
 
 const server = new WebSocketServer({
 	port: 4700,
@@ -25,6 +26,10 @@ const defaultClient = {
 };
 
 
+const rl = createInterface({
+	input: process.stdin,
+	output: process.stdout,
+});
 const playerAcceleration = 0.01;
 let clients = new Array(10).fill(undefined);
 let sockets = new Array(10).fill(undefined);
@@ -32,6 +37,7 @@ let lastTickStart = Date.now();
 let delta = 0;
 let tps = 0;
 let naturalLight = 1;
+let isOpen = true;
 let lightSources = new Array(10).fill(undefined);
 const { world, height: worldHeight, width: worldWidth } = getWorld();
 const doCollision = true;
@@ -47,6 +53,9 @@ const fov = {
 	height: 24,
 };
 
+console.log("Type \"help\" for list of commands");
+console.log("Type \"quit\" or Ctrl-c to shut down");
+promptCommand();
 server.on("connection", socket => {
 	const clientId = getFreeClientId();
 	if (clientId === -1) {
@@ -57,6 +66,16 @@ server.on("connection", socket => {
 		};
 		socket.send(JSON.stringify(data));
 		console.log("New connection: server full");
+		return;
+	}
+	if (!isOpen) {
+		const data = {
+			status: "error",
+			message: "The server is closed",
+			type: "serverClosed",
+		};
+		socket.send(JSON.stringify(data));
+		console.log("New connection: server closed");
 		return;
 	}
 	console.log("New connection: player ", clientId);
@@ -134,6 +153,10 @@ function sendUpdates() {
 }
 
 function receiveUpdate(clientId, msg) {
+	if (clients[clientId] === undefined) {
+		return;
+	}
+
 	const data = JSON.parse(msg.toString());
 	clients[clientId].keys = data.keys;
 	clients[clientId].colour = data.colour;
@@ -519,3 +542,104 @@ function getTileColour(type, light, humidity, temperature) {
 	return colours.void;
 }
 
+function kickPlayer(id) {
+	const data = {
+		status: "error",
+		message: "You were kicked from the server!",
+		type: "kicked",
+	};
+
+	sockets[id].send(JSON.stringify(data));
+	sockets[id].close();
+	sockets[id] = undefined;
+	clients[id] = undefined;
+}
+
+function prompt(query) {
+	return new Promise((resolve, _) => rl.question(query, resolve));
+}
+
+const commands = {
+	quit: {
+		description: "Shuts down the server.",
+		run: () => {
+			console.log("Shutting down server");
+			process.exit(0);
+		},
+	},
+	help: {
+		description: "Print help information.",
+		run: () => {
+			console.log("Help Info: ");
+			for (const command in commands) {
+				console.log(command);
+				console.log("\t", commands[command].description);
+			}
+		},
+	},
+	open: {
+		description: "Allow/Disallow new connections.",
+		run: ([allow]) => {
+			if (allow === "true") {
+				isOpen = true;
+				console.log("Server is open to new connections");
+				return;
+			}
+
+			if (allow === "false") {
+				isOpen = false;
+				console.log("Server is closed to new connections");
+				return;
+			}
+
+			console.log("Syntax error: expected true/false");
+		},
+	},
+	kick: {
+		description: "Kick player(s) from the server.",
+		run: ([target]) => {
+			const asInt = parseInt(target);
+			if (!isNaN(asInt)) {
+				if (clients[asInt] === undefined) {
+					console.log("This player is not connected");
+					return;
+				}
+
+				kickPlayer(asInt);
+				console.log("Player ", asInt, " was kicked");
+
+				return;
+			}
+
+			if (target === undefined) {
+				let kickedPlayers = 0;
+				for (let i = 0; i < clients.length; i++) {
+					if (clients[i] === undefined) {
+						continue;
+					}
+
+					kickedPlayers++;
+					kickPlayer(i);
+				}
+				console.log("Kicked all ", kickedPlayers, " players");
+
+				return;
+			}
+
+			console.log("Syntax error: Expected integer or no arguments");
+		},
+	},
+};
+
+async function promptCommand() {
+	while (true) {
+		const input = (await prompt("")).split(" ");
+
+		if (commands[input[0]] === undefined) {
+			console.log("Unknown command: ", input[0]);
+			continue;
+		}
+
+		commands[input[0]].run(input.slice(1));
+	}
+}

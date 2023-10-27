@@ -1,65 +1,24 @@
-const keys = {
-	KeyW: false,
-	KeyA: false,
-	KeyS: false,
-	KeyD: false,
-};
 let inGame = false;
-let camera = {
-	x: 0,
-	y: 0,
-};
 
-// The camera needs to be offset by half the screen width so the player is
-// placed in the centre of the screen.
-let cameraOffset = {
-	x: innerWidth / 2,
-	y: innerHeight / 2,
-};
+// Elements
+const canvas = document.querySelector("#game");
+const minimapCanvas = document.querySelector("#minimap");
+const minimapBorder = document.querySelector("#minimap-border");
+const fpsCounter = document.querySelector("#fps");
+const tpsCounter = document.querySelector("#tps");
+const coloursLabels = Array.from(document.querySelectorAll("#colours label"));
+const connectButton = document.querySelector("#connect-button");
+const connectMenu = document.querySelector("#connect");
+const gameUi = document.querySelector("#game-ui");
+const ui = document.querySelector("#ui");
+const colourInputs = document.querySelectorAll("#colours input");
+const fullscreenMinimapToggle = document.querySelector("#fullscreen-minimap-toggle");
+const serverAddressInput = document.querySelector("#server-address");
 
-// This is the length of the interval between sending inputs to the server.
-// Higher rates will result in less input lag.
-const sendUpdateRate = 60;
-const sendUpdateIntervalMs = 1000 / sendUpdateRate;
-
-// Server stuff
-let clientId = -1;
-let socket;
-let playerLocations = [];
-let sorroundings = [];
-let colour;
-let sorroundingsBottomLeft = {
-	x: 0,
-	y: 0,
-};
-
-// Set up the canvas
-const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-const minimapCanvas = document.getElementById("minimap");
-const minimapBorder = document.getElementById("minimap-border");
-let isFullscreenMap = false;
-const fpsCounter = document.getElementById("fps");
-const tpsCounter = document.getElementById("tps");
 const minimapCtx = minimapCanvas.getContext("2d");
-let sorroundingsBounds;
-let tileSize = 32;
-let delta = 0;
-let lastFrameStart = 0;
-let fps = 0;
-let tps = 0;
-const zoomLimits = {
-	min: 24,
-	max: 128,
-};
 
-const worldWidth = 1200;
-const worldHeight = 1200;
-
-
-canvas.width = innerWidth;
-canvas.height = innerHeight;
-
+// Menus
 const playerColours = [
 	"rgb(223,  96,  96)", // red
 	"rgb(223, 223,  96)", // yellow
@@ -69,90 +28,163 @@ const playerColours = [
 	"rgb(159,  96, 223)", // purple
 	"rgb(223,  96, 223)", // pink
 ];
-
-Array.from(document.querySelectorAll("#colours label")).map(
-	(label, i) => label.style.backgroundColor = playerColours[i],
+coloursLabels.map((label, i) =>
+	label.style.backgroundColor = playerColours[i],
 );
+connectButton.addEventListener("click", joinGame);
+fullscreenMinimapToggle.addEventListener("click", toggleMapFullscreen);
 
-document.getElementById("connect-button").addEventListener("click", () => {
-	if (inGame) {
+addEventListener("keypress", onKeypress);
+addEventListener("keydown", onKeydown);
+addEventListener("keyup", onKeyup);
+
+// Game
+let keys;
+let camera;
+let cameraOffset;
+let socket;
+let playerLocations;
+let clientId;
+let sorroundings;
+let colour;
+let sorroundingsBottomLeft;
+let isFullscreenMap;
+let sorroundingsBounds;
+let tileSize;
+let delta;
+let lastFrameStart;
+let fps;
+let tps;
+let zoomLimits;
+let worldWidth;
+let worldHeight;
+let avgFps;
+let totalFrames;
+let totalFps;
+let renderMinimapTimer;
+let sendUpdatesTimer;
+
+async function joinGame() {
+	if (inGame === true) {
 		return;
 	}
+	inGame = true;
+	setupGame();
+	connectMenu.style.display = "none";
+	gameUi.style.display = "block";
+	ui.classList.add("hide");
 
-	const server = document.getElementById("server-address").value;
-	openWebSocket(server)
-		.then(() => {
-			inGame = true;
-			minimapCanvas.width = worldWidth;
-			minimapCanvas.height = worldHeight;
-			document.getElementById("connect").style.display = "none";
-			document.getElementById("game-ui").style.display = "block";
-			document.getElementById("ui").classList.add("hide");
-			const colourInputs = document.querySelectorAll("#colours input");
-			colour = 0;
-			for (let i = 0; i < colourInputs.length; i++) {
-				if (colourInputs[i].checked) {
-					colour = i;
-					break;
-				}
-			}
+	// Connect to the server
+	const server = serverAddressInput.value;
+	await openWebSocket(server);
 
-			document.querySelector("#fullscreen-minimap-toggle")
-				.addEventListener("click", toggleMapFullscreen);
+	const sendUpdateRate = 60;
+	const sendUpdateIntervalMs = 1000 / sendUpdateRate;
+	const renderMinimapRate = 1;
+	const renderMinimapIntervalMs = 1000 / renderMinimapRate;
 
-			addEventListener("keypress", e => {
-				if (e.code === "KeyM") {
-					toggleMapFullscreen();
-				}
-			});
+	// Start the game
+	sendUpdatesTimer = setInterval(sendUpdates, sendUpdateIntervalMs);
+	renderMinimapTimer = setInterval(renderMinimap, renderMinimapIntervalMs);
+	requestAnimationFrame(frame);
+}
 
-			setInterval(sendUpdates, sendUpdateIntervalMs);
-			setInterval(renderMinimap, 1000);
-			requestAnimationFrame(frame);
-		});
-});
+function leaveGame() {
+	if (!inGame) {
+		return;
+	}
+	inGame = false;
 
-addEventListener("keydown", ({ code }) => {
-	keys[code] = true;
-});
+	socket.close();
+	clearInterval(sendUpdatesTimer);
+	clearInterval(renderMinimapTimer);
 
-addEventListener("keyup", ({ code }) => {
-	keys[code] = false;
-});
+	connectMenu.style.display = "block";
+	gameUi.style.display = "none";
+	ui.classList.remove("hide");
+}
 
+function setupGame() {
+	keys = {
+		KeyW: false,
+		KeyA: false,
+		KeyS: false,
+		KeyD: false,
+	};
+	camera = {
+		x: 0,
+		y: 0,
+	};
+	cameraOffset = {
+		x: innerWidth / 2,
+		y: innerHeight / 2,
+	};
+	clientId = -1;
+	playerLocations = [];
+	sorroundings = [];
+	sorroundingsBottomLeft = {
+		x: 0,
+		y: 0,
+	};
+	isFullscreenMap = false;
+	tileSize = 32;
+	delta = 0;
+	lastFrameStart = 0;
+	fps = 0;
+	tps = 0;
+	totalFps = 0;
+	avgFps = 0;
+	totalFrames = 0;
+	zoomLimits = {
+		min: 24,
+		max: 128,
+	};
+	worldWidth = 1200;
+	worldHeight = 1200;
+
+	canvas.height = innerHeight;
+	canvas.width = innerWidth;
+	minimapCanvas.width = worldWidth;
+	minimapCanvas.height = worldHeight;
+
+
+	colour = 0;
+	for (let i = 0; i < colourInputs.length; i++) {
+		if (colourInputs[i].checked) {
+			colour = i;
+			break;
+		}
+	}
+}
 
 async function openWebSocket(server) {
-	return new Promise((res, _) => {
+	return new Promise((resolve, _) => {
 		try {
 			socket = new WebSocket(server);
 		} catch (e) {
-			alert("connection error");
+			alert("Connection error");
+			leaveGame();
 			throw e;
 		}
 
-		socket.addEventListener("open", () => {
-			socket.addEventListener("message", receiveUpdate);
-			res(socket);
-		});
+		socket.addEventListener("message", receiveUpdate);
 
 		socket.addEventListener("error", _ => {
-			alert("connection error");
+			alert("Connection error");
+			leaveGame();
+		});
+
+		socket.addEventListener("open", () => {
+			resolve(socket);
 		});
 	});
-}
-
-function sendUpdates() {
-	const data = {
-		keys,
-		colour,
-	};
-	socket.send(JSON.stringify(data));
 }
 
 function receiveUpdate(msg) {
 	const data = JSON.parse(msg.data);
 	if (data.status === "error") {
 		alert(data.message);
+		leaveGame();
 		return;
 	}
 
@@ -164,92 +196,6 @@ function receiveUpdate(msg) {
 	tps = data.tps;
 
 	decodeSorroundings(data.sorroundings);
-}
-
-function frame() {
-	const now = Date.now();
-	delta = now - lastFrameStart;
-	lastFrameStart = Date.now();
-	fps = 1000 / delta;
-
-	fpsCounter.innerText = Math.round(fps).toString().padStart(3, "0");
-	tpsCounter.innerText = Math.round(tps).toString().padStart(3, "0");
-
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-	for (let x = 0; x < sorroundings.length; x++) {
-		for (let y = 0; y < sorroundings[x].length; y++) {
-			const [r, g, b] = sorroundings[x][y];
-			const colour = `rgb(${r}, ${g}, ${b})`;
-
-			drawRect(
-				(x + sorroundingsBottomLeft.x - camera.x) * tileSize + cameraOffset.x,
-				(y + sorroundingsBottomLeft.y - camera.y) * tileSize + cameraOffset.y,
-				tileSize + 1,
-				tileSize + 1,
-				colour,
-			);
-		}
-	}
-
-	for (const player of playerLocations) {
-		if (player === null) {
-			continue;
-		}
-
-
-		drawRect(
-			(player.position.x - camera.x) * tileSize + cameraOffset.x - tileSize / 2 - 0.025 * tileSize,
-			(player.position.y - camera.y) * tileSize + cameraOffset.y - tileSize / 2 - 0.025 * tileSize,
-			tileSize + 0.05 * tileSize,
-			tileSize + 0.05 * tileSize,
-			"black",
-		);
-		drawRect(
-			(player.position.x - camera.x) * tileSize + cameraOffset.x - tileSize / 2,
-			(player.position.y - camera.y) * tileSize + cameraOffset.y - tileSize / 2,
-			tileSize,
-			tileSize,
-			playerColours[player.colour],
-		);
-	}
-
-
-	if (keys.Equal) {
-		tileSize += 8;
-	}
-
-	if (keys.Minus) {
-		tileSize -= 8;
-	}
-
-	if (tileSize > zoomLimits.max) {
-		tileSize = zoomLimits.max;
-	}
-
-	if (tileSize < zoomLimits.min) {
-		tileSize = zoomLimits.min;
-	}
-
-	requestAnimationFrame(frame);
-}
-
-function drawRect(x, y, w, h, c) {
-	ctx.fillStyle = c;
-	ctx.fillRect(x, canvas.height - y, w, -h);
-}
-
-function renderMinimap() {
-	for (let x = 0; x < sorroundings.length; x++) {
-		for (let y = 0; y < sorroundings[x].length; y++) {
-			const [r, g, b] = sorroundings[x][y];
-			minimapCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-
-			minimapCtx.fillRect(x + sorroundingsBottomLeft.x, worldHeight - (y + sorroundingsBottomLeft.y), 1, -1);
-		}
-	}
-	minimapCanvas.style.left = `${150 - camera.x}px`;
-	minimapCanvas.style.top = `${150 - (worldHeight - camera.y)}px`;
 }
 
 function decodeSorroundings(input) {
@@ -297,8 +243,90 @@ function decodeSorroundings(input) {
 	return sorroundings;
 }
 
+function sendUpdates() {
+	const data = {
+		keys,
+		colour,
+	};
+	socket.send(JSON.stringify(data));
+}
+
+function renderMinimap() {
+	for (let x = 0; x < sorroundings.length; x++) {
+		for (let y = 0; y < sorroundings[x].length; y++) {
+			const [r, g, b] = sorroundings[x][y];
+			minimapCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+
+			minimapCtx.fillRect(x + sorroundingsBottomLeft.x, worldHeight - (y + sorroundingsBottomLeft.y), 1, -1);
+		}
+	}
+	minimapCanvas.style.left = `${150 - camera.x}px`;
+	minimapCanvas.style.top = `${150 - (worldHeight - camera.y)}px`;
+}
+
+function frame() {
+	const now = Date.now();
+	delta = now - lastFrameStart;
+	lastFrameStart = Date.now();
+	fps = 1000 / delta;
+
+	fpsCounter.innerText = Math.round(fps).toString().padStart(3, "0");
+	tpsCounter.innerText = Math.round(tps).toString().padStart(3, "0");
+
+	totalFps += fps;
+	totalFrames++;
+	avgFps = totalFps / totalFrames;
+
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+	for (let x = 0; x < sorroundings.length; x++) {
+		for (let y = 0; y < sorroundings[x].length; y++) {
+			const [r, g, b] = sorroundings[x][y];
+			const colour = `rgb(${r}, ${g}, ${b})`;
+
+			drawRect(
+				(x + sorroundingsBottomLeft.x - camera.x) * tileSize + cameraOffset.x,
+				(y + sorroundingsBottomLeft.y - camera.y) * tileSize + cameraOffset.y,
+				tileSize + 1,
+				tileSize + 1,
+				colour,
+			);
+		}
+	}
+
+	for (const player of playerLocations) {
+		if (player === null) {
+			continue;
+		}
+
+
+		drawRect(
+			(player.position.x - camera.x) * tileSize + cameraOffset.x - tileSize / 2 - 0.025 * tileSize,
+			(player.position.y - camera.y) * tileSize + cameraOffset.y - tileSize / 2 - 0.025 * tileSize,
+			tileSize + 0.05 * tileSize,
+			tileSize + 0.05 * tileSize,
+			"black",
+		);
+		drawRect(
+			(player.position.x - camera.x) * tileSize + cameraOffset.x - tileSize / 2,
+			(player.position.y - camera.y) * tileSize + cameraOffset.y - tileSize / 2,
+			tileSize,
+			tileSize,
+			playerColours[player.colour],
+		);
+	}
+
+	if (inGame) {
+		requestAnimationFrame(frame);
+	}
+}
+
+function drawRect(x, y, w, h, c) {
+	ctx.fillStyle = c;
+	ctx.fillRect(x, canvas.height - y, w, -h);
+}
+
 function toggleMapFullscreen() {
-	console.log("hello", isFullscreenMap);
 	isFullscreenMap = !isFullscreenMap;
 
 	if (isFullscreenMap) {
@@ -310,3 +338,44 @@ function toggleMapFullscreen() {
 	}
 }
 
+function onKeypress({ code }) {
+	if (!inGame) {
+		return;
+	}
+
+	if (code === "KeyM") {
+		toggleMapFullscreen();
+	}
+
+	if (code === "Equal") {
+		tileSize += 8;
+	}
+
+	if (code === "Minus") {
+		tileSize -= 8;
+	}
+
+	if (tileSize > zoomLimits.max) {
+		tileSize = zoomLimits.max;
+	}
+
+	if (tileSize < zoomLimits.min) {
+		tileSize = zoomLimits.min;
+	}
+}
+
+function onKeydown({ code }) {
+	if (!inGame) {
+		return;
+	}
+
+	keys[code] = true;
+}
+
+function onKeyup({ code }) {
+	if (!inGame) {
+		return;
+	}
+
+	keys[code] = false;
+}

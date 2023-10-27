@@ -309,8 +309,8 @@ function getFreeClientId() {
 }
 
 function generateWorld() {
-	const width = 255;
-	const height = 255;
+	const width = 1000;
+	const height = 1000;
 	const world = [];
 	const seed = Math.floor(Math.random() * 1000);
 
@@ -410,10 +410,21 @@ function getWorld() {
 	return { world, height, width };
 }
 
+// Split a 16-bit integer into two 8-bit integers
+// This is used for saving the world width/height which are 16-bit ints and need
+// to be stored in bytes.
+// For example, 0b1111111100000000 returns [0b11111111, 0b00000000]
+function split16BitInt(n) {
+	const ub = Math.floor(n / 256);
+	const lb = n % 256;
+
+	return [ub, lb];
+}
+
 function encodeSave(world, width, height) {
 	return Buffer.from([
-		width,
-		height,
+		...split16BitInt(width),
+		...split16BitInt(height),
 		...world.flatMap(col =>
 			col.flatMap(({ type, humidity, temperature }) =>
 				[type, humidity, temperature]
@@ -424,13 +435,15 @@ function encodeSave(world, width, height) {
 
 function decodeSave(save) {
 	const bytes = new Uint8Array(save);
-	if (bytes.length < 2) {
-		console.log("Expected length: ", ">2 bytes");
+	if (bytes.length < 4) {
+		console.log("Expected length: ", ">4 bytes");
 		console.log("Actual length: ", bytes.length);
 		throw new Error("No world sizes found in save file (it is probably corrupted)");
 	}
 
-	const [width, height, ...data] = bytes;
+	const [width1, width2, height1, height2, ...data] = bytes;
+	const width = (width1 << 8) + width2;
+	const height = (height1 << 8) + height2;
 	const totalSize = width * height * 3;
 
 	if (data < totalSize) {

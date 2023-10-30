@@ -13,6 +13,7 @@ const gameUi = document.querySelector("#game-ui");
 const ui = document.querySelector("#ui");
 const colourInputs = document.querySelectorAll("#colours input");
 const fullscreenMinimapToggle = document.querySelector("#fullscreen-minimap-toggle");
+const flashlightToggle = document.querySelector("#flashlight-toggle");
 const serverAddressInput = document.querySelector("#server-address");
 
 const ctx = canvas.getContext("2d");
@@ -33,6 +34,7 @@ coloursLabels.map((label, i) =>
 );
 connectButton.addEventListener("click", joinGame);
 fullscreenMinimapToggle.addEventListener("click", toggleMapFullscreen);
+flashlightToggle.addEventListener("click", toggleFlashlight);
 
 addEventListener("keypress", onKeypress);
 addEventListener("keydown", onKeydown);
@@ -66,6 +68,7 @@ let totalFrames;
 let totalFps;
 let renderMinimapTimer;
 let sendUpdatesTimer;
+let isFlashlightEnabled;
 
 async function joinGame() {
 	if (inGame === true) {
@@ -149,6 +152,7 @@ function setupGame() {
 	};
 	worldWidth = 1200;
 	worldHeight = 1200;
+	isFlashlightEnabled = false;
 
 	canvas.height = innerHeight;
 	canvas.width = innerWidth;
@@ -256,6 +260,7 @@ function sendUpdates() {
 		keys,
 		colour,
 		aimDirection,
+		isFlashlightEnabled,
 	};
 	socket.send(JSON.stringify(data));
 }
@@ -358,6 +363,10 @@ function toggleMapFullscreen() {
 	}
 }
 
+function toggleFlashlight() {
+	isFlashlightEnabled = !isFlashlightEnabled;
+}
+
 function onKeypress({ code }) {
 	if (!inGame) {
 		return;
@@ -373,6 +382,10 @@ function onKeypress({ code }) {
 
 	if (code === "Minus") {
 		tileSize -= 8;
+	}
+
+	if (code === "KeyQ") {
+		toggleFlashlight();
 	}
 
 	if (tileSize > zoomLimits.max) {

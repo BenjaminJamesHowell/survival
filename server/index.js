@@ -162,6 +162,7 @@ function receiveUpdate(clientId, msg) {
 	clients[clientId].keys = data.keys;
 	clients[clientId].aimDirection = data.aimDirection;
 	clients[clientId].colour = data.colour;
+	clients[clientId].isFlashlightEnabled = data.isFlashlightEnabled;
 }
 
 function tick() {
@@ -182,14 +183,19 @@ function tick() {
 			continue;
 		}
 
-		const aimDirection = clients[clientId].aimDirection;
-		const intensity = 1;
-		lightSources[clientId] = {
-			x: clients[clientId].position.x,
-			y: clients[clientId].position.y,
-			intensity,
-			direction: aimDirection,
-		};
+		if (clients[clientId].isFlashlightEnabled) {
+			const aimDirection = clients[clientId].aimDirection;
+			const intensity = 1;
+			lightSources[clientId] = {
+				x: clients[clientId].position.x,
+				y: clients[clientId].position.y,
+				intensity,
+				direction: aimDirection,
+			};
+	  	} else {
+			lightSources[clientId] = undefined;
+		}
+
 
 
 		const acceleration = {

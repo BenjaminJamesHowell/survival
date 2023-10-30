@@ -156,14 +156,28 @@ button {
 	margin: 5px;
 }
 
-#info {
-	width: 265px;
+#flashlight-toggle {
+	cursor: pointer;
+	width: 30px;
+	font-size: 18px;
+	color: white;
 	height: 30px;
 	background: #000E;
 	position: fixed;
 	z-index: 2;
 	top: 305px;
 	left: 35px;
+	margin: 5px;
+}
+
+#info {
+	width: 230px;
+	height: 30px;
+	background: #000E;
+	position: fixed;
+	z-index: 2;
+	top: 305px;
+	left: 70px;
 	margin: 5px;
 	padding: 5px;
 	color: white;

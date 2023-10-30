@@ -22,6 +22,7 @@ const defaultClient = {
 		KeyS: false,
 		KeyD: false,
 	},
+	aimDirection: 0,
 	colour: 0,
 };
 
@@ -159,6 +160,7 @@ function receiveUpdate(clientId, msg) {
 
 	const data = JSON.parse(msg.toString());
 	clients[clientId].keys = data.keys;
+	clients[clientId].aimDirection = data.aimDirection;
 	clients[clientId].colour = data.colour;
 }
 
@@ -180,11 +182,15 @@ function tick() {
 			continue;
 		}
 
+		const aimDirection = clients[clientId].aimDirection;
+		const intensity = 1;
 		lightSources[clientId] = {
 			x: clients[clientId].position.x,
 			y: clients[clientId].position.y,
-			intensity: 1,
+			intensity,
+			direction: aimDirection,
 		};
+
 
 		const acceleration = {
 			x: 0,
@@ -346,8 +352,8 @@ function generateWorld() {
 
 function getTile(x, y, terrainNoise, humidityNoise, temperatureNoise) {
 	const isLand = terrainNoise.GetNoise(x / 4, y / 4) >= -0.3;
-	const humidity = Math.floor((humidityNoise.GetNoise(x / 4, y / 4) + 1) * (255 / 2));
-	const temperature = Math.floor((temperatureNoise.GetNoise(x / 4, y / 4) + 1) * (255 / 2));
+	const humidity = Math.floor((humidityNoise.GetNoise(x / 8, y / 8) + 1) * (255 / 2));
+	const temperature = Math.floor((temperatureNoise.GetNoise(x / 8, y / 8) + 1) * (255 / 2));
 
 	return {
 		type: isLand ? 1 : 0,
@@ -490,14 +496,47 @@ function getTileLight(x, y, {}) {
 			continue;
 		}
 
-		const { x: sourceX, y: sourceY, intensity } = lightSource;
+		const { x: sourceX, y: sourceY, intensity, direction } = lightSource;
 		let xDistance = Math.abs(x - sourceX);
 		let yDistance = Math.abs(y - sourceY);
 		let distance = xDistance + yDistance;
-		light += intensity / distance;
+
+		if (direction === undefined) {
+			light += intensity / distance;
+			continue;
+		}
+		else {
+			const xdiff = x - sourceX;
+			const ydiff = y - sourceY;
+
+			const m = Math.tan(direction);
+			const closeness = Math.max(1, Math.abs(Math.floor(ydiff * m) - Math.floor(xdiff)));
+
+			if (direction < Math.PI * 0.75 && direction > Math.PI * 0.25) {
+				if (xdiff < 0) {
+					continue;
+				}
+			}
+			if (direction > Math.PI * 1.25 && direction < Math.PI * 1.75) {
+				if (xdiff > 0) {
+					continue;
+				}
+			}
+			if (direction > Math.PI * 0.75 && direction < Math.PI * 1.25) {
+				if (ydiff > 0) {
+					continue;
+				}
+			}
+			if (direction < Math.PI * 0.25 || direction > Math.PI * 1.75) {
+				if (ydiff < 0) {
+					continue;
+				}
+			}
+			light += intensity / ((distance * 10) * (closeness * 0.5));
+		}
 	}
 
-	return Math.min(255, light * 255);
+	return Math.max(0, Math.min(255, light * 255));
 }
 
 function colourToString([r, g, b]) {

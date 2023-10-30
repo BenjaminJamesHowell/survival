@@ -37,9 +37,12 @@ fullscreenMinimapToggle.addEventListener("click", toggleMapFullscreen);
 addEventListener("keypress", onKeypress);
 addEventListener("keydown", onKeydown);
 addEventListener("keyup", onKeyup);
+addEventListener("mousemove", onMousemove);
 
 // Game
 let keys;
+let mouse;
+let aimDirection;
 let camera;
 let cameraOffset;
 let socket;
@@ -75,7 +78,7 @@ async function joinGame() {
 	ui.classList.add("hide");
 
 	// Connect to the server
-	const server = serverAddressInput.value;
+	const server = `ws://${serverAddressInput.value}`;
 	await openWebSocket(server);
 
 	const sendUpdateRate = 60;
@@ -111,6 +114,11 @@ function setupGame() {
 		KeyS: false,
 		KeyD: false,
 	};
+	mouse = {
+		x: 0,
+		y: 0,
+	};
+	aimDirection = 0;
 	camera = {
 		x: 0,
 		y: 0,
@@ -247,6 +255,7 @@ function sendUpdates() {
 	const data = {
 		keys,
 		colour,
+		aimDirection,
 	};
 	socket.send(JSON.stringify(data));
 }
@@ -316,6 +325,17 @@ function frame() {
 		);
 	}
 
+	if (mouse.x >= 0 && mouse.y >= 0) {
+		aimDirection = Math.atan(mouse.x / mouse.y);
+	} else if (mouse.x < 0 && mouse.y > 0) {
+		aimDirection = Math.atan(mouse.x / mouse.y) + 2 * Math.PI;
+	} else if (mouse.x >= 0 && mouse.y < 0) {
+		aimDirection = Math.atan(mouse.x / mouse.y) + Math.PI;
+	} else {
+		aimDirection = Math.atan(mouse.x / mouse.y) + Math.PI;
+	}
+
+
 	if (inGame) {
 		requestAnimationFrame(frame);
 	}
@@ -378,4 +398,13 @@ function onKeyup({ code }) {
 	}
 
 	keys[code] = false;
+}
+
+function onMousemove({ clientX, clientY }) {
+	if (!inGame) {
+		return;
+	}
+
+	mouse.x = clientX - cameraOffset.x;
+	mouse.y = innerHeight - clientY - cameraOffset.y;
 }

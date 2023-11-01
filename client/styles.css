@@ -45,7 +45,7 @@ label, #connect p {
 	display: block;
 }
 
-input, #colours {
+input, #colours, button {
 	font-family: inherit;
 	cursor: pointer;
 	display: block;
@@ -59,11 +59,11 @@ input, #colours {
 	color: white;
 }
 
-input:hover {
+input:hover, button:hover {
 	background: #333333EE;
 }
 
-input:focus {
+input:focus, button:focus {
 	background: #FFF;
 	outline: none;
 	color: black;
@@ -143,6 +143,7 @@ button {
 }
 
 #fullscreen-minimap-toggle {
+	padding: 0;
 	cursor: pointer;
 	width: 30px;
 	font-size: 18px;
@@ -157,6 +158,7 @@ button {
 }
 
 #flashlight-toggle {
+	padding: 0;
 	cursor: pointer;
 	width: 30px;
 	font-size: 18px;
@@ -170,8 +172,12 @@ button {
 	margin: 5px;
 }
 
-#info {
-	width: 230px;
+#pause-toggle {
+	padding: 0;
+	cursor: pointer;
+	width: 30px;
+	font-size: 18px;
+	color: white;
 	height: 30px;
 	background: #000E;
 	position: fixed;
@@ -179,7 +185,34 @@ button {
 	top: 305px;
 	left: 70px;
 	margin: 5px;
+}
+
+#info {
+	width: 195px;
+	height: 30px;
+	background: #000E;
+	position: fixed;
+	z-index: 2;
+	top: 305px;
+	left: 105px;
+	margin: 5px;
 	padding: 5px;
 	color: white;
 }
+
+#pause-ui {
+	display: none;
+	position: fixed;
+	top: calc(50vh - 150px);
+	left: calc(50vw - 150px);
+	margin: auto;
+	width: 300px;
+	height: 300px;
+	background: #000E; 
+	z-index: 2;
+	text-align: center;
+	color: white;
+	padding: 5px;
+}
+
 

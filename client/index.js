@@ -14,7 +14,11 @@ const ui = document.querySelector("#ui");
 const colourInputs = document.querySelectorAll("#colours input");
 const fullscreenMinimapToggle = document.querySelector("#fullscreen-minimap-toggle");
 const flashlightToggle = document.querySelector("#flashlight-toggle");
+const pauseToggle = document.querySelector("#pause-toggle");
 const serverAddressInput = document.querySelector("#server-address");
+const pauseUi = document.querySelector("#pause-ui");
+const pauseResume = document.querySelector("#pause-resume");
+const pauseExit = document.querySelector("#pause-exit");
 
 const ctx = canvas.getContext("2d");
 const minimapCtx = minimapCanvas.getContext("2d");
@@ -35,6 +39,9 @@ coloursLabels.map((label, i) =>
 connectButton.addEventListener("click", joinGame);
 fullscreenMinimapToggle.addEventListener("click", toggleMapFullscreen);
 flashlightToggle.addEventListener("click", toggleFlashlight);
+pauseToggle.addEventListener("click", togglePause);
+pauseResume.addEventListener("click", togglePause);
+pauseExit.addEventListener("click", leaveGame);
 
 addEventListener("keypress", onKeypress);
 addEventListener("keydown", onKeydown);
@@ -69,6 +76,7 @@ let totalFps;
 let renderMinimapTimer;
 let sendUpdatesTimer;
 let isFlashlightEnabled;
+let isPaused;
 
 async function joinGame() {
 	if (inGame === true) {
@@ -96,6 +104,10 @@ async function joinGame() {
 }
 
 function leaveGame() {
+	if (isPaused) {
+		togglePause();
+	}
+
 	if (!inGame) {
 		return;
 	}
@@ -355,6 +367,11 @@ function toggleMapFullscreen() {
 	isFullscreenMap = !isFullscreenMap;
 
 	if (isFullscreenMap) {
+		if (isPaused) {
+			isFullscreenMap = false;
+			return;
+		}
+
 		minimapBorder.classList.add("big");
 		minimapBorder.classList.remove("small");
 	} else {
@@ -365,6 +382,20 @@ function toggleMapFullscreen() {
 
 function toggleFlashlight() {
 	isFlashlightEnabled = !isFlashlightEnabled;
+}
+
+function togglePause() {
+	isPaused = !isPaused;
+
+	if (isPaused) {
+		pauseUi.style.display = "block";
+
+		if (isFullscreenMap) {
+			toggleMapFullscreen();
+		}
+	} else {
+		pauseUi.style.display = "none";
+	}
 }
 
 function onKeypress({ code }) {
@@ -386,6 +417,10 @@ function onKeypress({ code }) {
 
 	if (code === "KeyQ") {
 		toggleFlashlight();
+	}
+
+	if (code === "KeyE") {
+		togglePause();
 	}
 
 	if (tileSize > zoomLimits.max) {

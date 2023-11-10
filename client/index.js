@@ -352,6 +352,20 @@ function frame() {
 		aimDirection = Math.atan(mouse.x / mouse.y) + Math.PI;
 	}
 
+	if (keys.Equal) {
+		tileSize += 0.25 * delta;
+	}
+	if (keys.Minus) {
+		tileSize -= 0.25 * delta;
+	}
+
+	if (tileSize > zoomLimits.max) {
+		tileSize = zoomLimits.max;
+	}
+
+	if (tileSize < zoomLimits.min) {
+		tileSize = zoomLimits.min;
+	}
 
 	if (inGame) {
 		requestAnimationFrame(frame);
@@ -407,14 +421,6 @@ function onKeypress({ code }) {
 		toggleMapFullscreen();
 	}
 
-	if (code === "Equal") {
-		tileSize += 8;
-	}
-
-	if (code === "Minus") {
-		tileSize -= 8;
-	}
-
 	if (code === "KeyQ") {
 		toggleFlashlight();
 	}
@@ -423,13 +429,6 @@ function onKeypress({ code }) {
 		togglePause();
 	}
 
-	if (tileSize > zoomLimits.max) {
-		tileSize = zoomLimits.max;
-	}
-
-	if (tileSize < zoomLimits.min) {
-		tileSize = zoomLimits.min;
-	}
 }
 
 function onKeydown({ code }) {

@@ -70,13 +70,13 @@ input, #colours, button {
 }
 
 input:hover, button:hover {
-	background: #333333EE;
+	background: #333333EE !important;
 }
 
 input:focus, button:focus {
-	background: #FFF;
+	background: #FFF !important;
 	outline: none;
-	color: black;
+	color: black !important;
 }
 
 #colours {

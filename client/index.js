@@ -388,6 +388,7 @@ function drawRect(x, y, w, h, c) {
 
 function toggleMapFullscreen() {
 	isFullscreenMap = !isFullscreenMap;
+	fullscreenMinimapToggle.blur();
 
 	if (isFullscreenMap) {
 		if (isPaused) {
@@ -404,10 +405,12 @@ function toggleMapFullscreen() {
 }
 
 function toggleFlashlight() {
+	flashlightToggle.blur();
 	isFlashlightEnabled = !isFlashlightEnabled;
 }
 
 function togglePause() {
+	pauseToggle.blur();
 	isPaused = !isPaused;
 
 	if (isPaused) {

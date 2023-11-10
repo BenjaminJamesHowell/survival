@@ -30,6 +30,16 @@ body {
 	opacity: 0;
 }
 
+#time {
+	position: fixed;
+	bottom: 5px;
+	left: 5px;
+	color: white;
+	padding: 5px;
+	border-radius: 2px;
+	background: #000E;
+}
+
 #connect {
 	margin: auto;
 	background: #00000055;
@@ -123,6 +133,7 @@ button {
 }
 
 #minimap-border {
+	border-radius: 2px;
 	background: #000E;
 	margin: 5px;
 	position: fixed;
@@ -188,6 +199,7 @@ button {
 }
 
 #info {
+	border-radius: 2px;
 	width: 195px;
 	height: 30px;
 	background: #000E;

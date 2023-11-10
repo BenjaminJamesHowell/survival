@@ -37,6 +37,7 @@ let sockets = new Array(10).fill(undefined);
 let lastTickStart = Date.now();
 let delta = 0;
 let tps = 0;
+let time = 0;
 let naturalLight = 1;
 let isOpen = true;
 let lightSources = new Array(10).fill(undefined);
@@ -147,6 +148,7 @@ function sendUpdates() {
 			camera: clients[clientId].position,
 			clientId,
 			tps,
+			time,
 		};
 
 		socket.send(JSON.stringify(data));
@@ -166,9 +168,9 @@ function receiveUpdate(clientId, msg) {
 }
 
 function tick() {
-	let now = Date.now();
-	delta = now - lastTickStart;
-	lastTickStart = Date.now();
+	time = Date.now();
+	delta = time - lastTickStart;
+	lastTickStart = time;
 	tps = 1000 / delta;
 
 	const hour = new Date().getHours();

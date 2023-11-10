@@ -19,6 +19,8 @@ const serverAddressInput = document.querySelector("#server-address");
 const pauseUi = document.querySelector("#pause-ui");
 const pauseResume = document.querySelector("#pause-resume");
 const pauseExit = document.querySelector("#pause-exit");
+const timeHoursDisplay = document.querySelector("#hours");
+const timeMinutesDisplay = document.querySelector("#minutes");
 
 const ctx = canvas.getContext("2d");
 const minimapCtx = minimapCanvas.getContext("2d");
@@ -77,6 +79,7 @@ let renderMinimapTimer;
 let sendUpdatesTimer;
 let isFlashlightEnabled;
 let isPaused;
+let time;
 
 async function joinGame() {
 	if (inGame === true) {
@@ -171,6 +174,7 @@ function setupGame() {
 	minimapCanvas.width = worldWidth;
 	minimapCanvas.height = worldHeight;
 
+	time = 0;
 
 	colour = 0;
 	for (let i = 0; i < colourInputs.length; i++) {
@@ -218,6 +222,7 @@ function receiveUpdate(msg) {
 	camera = data.camera;
 	clientId = data.clientId;
 	tps = data.tps;
+	time = data.time;
 
 	decodeSorroundings(data.sorroundings);
 }
@@ -298,6 +303,10 @@ function frame() {
 
 	fpsCounter.innerText = Math.round(fps).toString().padStart(3, "0");
 	tpsCounter.innerText = Math.round(tps).toString().padStart(3, "0");
+
+	const gameTime = new Date(time);
+	timeHoursDisplay.innerText = gameTime.getHours().toString().padStart(2, "0");
+	timeMinutesDisplay.innerText = gameTime.getMinutes().toString().padStart(2, "0");
 
 	totalFps += fps;
 	totalFrames++;

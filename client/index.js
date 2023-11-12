@@ -3,7 +3,7 @@ let inGame = false;
 // Elements
 const canvas = document.querySelector("#game");
 const minimapCanvas = document.querySelector("#minimap");
-const minimapBorder = document.querySelector("#minimap-border");
+// const minimapBorder = document.querySelector("#minimap-border");
 const fpsCounter = document.querySelector("#fps");
 const tpsCounter = document.querySelector("#tps");
 const coloursLabels = Array.from(document.querySelectorAll("#colours label"));
@@ -13,6 +13,9 @@ const gameUi = document.querySelector("#game-ui");
 const ui = document.querySelector("#ui");
 const colourInputs = document.querySelectorAll("#colours input");
 const fullscreenMinimapToggle = document.querySelector("#fullscreen-minimap-toggle");
+const zoomInMinimapButton = document.querySelector("#zoom-in-minimap");
+const zoomOutMinimapButton  = document.querySelector("#zoom-out-minimap");
+const minimapUi = document.querySelector("#minimap-ui");
 const flashlightToggle = document.querySelector("#flashlight-toggle");
 const pauseToggle = document.querySelector("#pause-toggle");
 const serverAddressInput = document.querySelector("#server-address");
@@ -80,6 +83,8 @@ let sendUpdatesTimer;
 let isFlashlightEnabled;
 let isPaused;
 let time;
+let minimapTileSize;
+let minimap;
 
 async function joinGame() {
 	if (inGame === true) {
@@ -97,7 +102,7 @@ async function joinGame() {
 
 	const sendUpdateRate = 60;
 	const sendUpdateIntervalMs = 1000 / sendUpdateRate;
-	const renderMinimapRate = 1;
+	const renderMinimapRate = 10;
 	const renderMinimapIntervalMs = 1000 / renderMinimapRate;
 
 	// Start the game
@@ -171,8 +176,14 @@ function setupGame() {
 
 	canvas.height = innerHeight;
 	canvas.width = innerWidth;
-	minimapCanvas.width = worldWidth;
-	minimapCanvas.height = worldHeight;
+	minimapTileSize = 1;
+	minimap = [];
+	for (let x = 0; x < worldWidth; x++) {
+		minimap[x] = [];
+		for (let y = 0; y < worldHeight; y++) {
+			minimap[x][y] = undefined;
+		}
+	}
 
 	time = 0;
 
@@ -283,16 +294,72 @@ function sendUpdates() {
 }
 
 function renderMinimap() {
+	minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
 	for (let x = 0; x < sorroundings.length; x++) {
 		for (let y = 0; y < sorroundings[x].length; y++) {
-			const [r, g, b] = sorroundings[x][y];
-			minimapCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+			const mapX = x + sorroundingsBottomLeft.x;
+			const mapY = y + sorroundingsBottomLeft.y;
+			if (mapX < 0 || mapY < 0) {
+				continue;
+			}
 
-			minimapCtx.fillRect(x + sorroundingsBottomLeft.x, worldHeight - (y + sorroundingsBottomLeft.y), 1, -1);
+			minimap[mapX][mapY] = sorroundings[x][y];
+
 		}
 	}
-	minimapCanvas.style.left = `${150 - camera.x}px`;
-	minimapCanvas.style.top = `${150 - (worldHeight - camera.y)}px`;
+
+	if (!isFullscreenMap) {
+		let minimapWidthTiles = 200;
+		let minimapHeightTiles = 200;
+
+		let minimapBottomLeft = {
+			x: Math.floor(-minimapWidthTiles / 2),
+			y: Math.floor(-minimapHeightTiles / 2),
+		};
+		let minimapTopRight = {
+			x: Math.floor(minimapHeightTiles / 2),
+			y: Math.floor(minimapWidthTiles / 2),
+		};
+		for (let xOffset = minimapBottomLeft.x; xOffset < minimapTopRight.x; xOffset++) {
+			for (let yOffset = minimapBottomLeft.y; yOffset < minimapTopRight.y; yOffset++) {
+				const x = xOffset + Math.floor(camera.x);
+				const y = yOffset + Math.floor(camera.y);
+				const data = minimap[x]?.[y];
+				if (data === undefined) {
+					continue;
+				}
+
+				const [r, g, b] = data;
+				minimapCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+				minimapCtx.fillRect(
+					xOffset * minimapTileSize + 100,
+					minimapCanvas.height - (yOffset * minimapTileSize + 100),
+					Math.round(minimapTileSize + 2),
+					-Math.round(minimapTileSize + 2),
+				);
+			}
+		}
+	} else {
+		minimapTileSize = 1;
+		for (let x = 0; x < worldWidth; x++) {
+			for (let y = 0; y < worldHeight; y++) {
+				const data = minimap[x]?.[y];
+				if (data === undefined) {
+					continue;
+				}
+				
+				const [r, g, b] = data;
+				minimapCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+				minimapCtx.fillRect(
+					x * minimapTileSize,
+					minimapCanvas.height - y * minimapTileSize,
+					Math.round(minimapTileSize + 2),
+					-Math.round(minimapTileSize + 2),
+				);
+			}
+		}
+	}
 }
 
 function frame() {
@@ -376,6 +443,24 @@ function frame() {
 		tileSize = zoomLimits.min;
 	}
 
+	if (zoomInMinimapButton === document.activeElement) {
+		minimapTileSize += 0.01 * delta;
+		zoomInMinimapButton.blur();
+	}
+
+	if (zoomOutMinimapButton === document.activeElement) {
+		minimapTileSize -= 0.01 * delta;
+		zoomOutMinimapButton.blur();
+	}
+
+	if (minimapTileSize < 1) {
+		minimapTileSize = 1;
+	}
+
+	if (minimapTileSize > 10) {
+		minimapTileSize = 10;
+	}
+
 	if (inGame) {
 		requestAnimationFrame(frame);
 	}
@@ -396,11 +481,17 @@ function toggleMapFullscreen() {
 			return;
 		}
 
-		minimapBorder.classList.add("big");
-		minimapBorder.classList.remove("small");
+		minimapUi.classList.add("big");
+		minimapUi.classList.remove("small");
+
+		minimapCanvas.width = innerWidth - 60;
+		minimapCanvas.height = innerHeight - 60;
 	} else {
-		minimapBorder.classList.remove("big");
-		minimapBorder.classList.add("small");
+		minimapUi.classList.remove("big");
+		minimapUi.classList.add("small");
+
+		minimapCanvas.width = 200;
+		minimapCanvas.height = 200;
 	}
 }
 

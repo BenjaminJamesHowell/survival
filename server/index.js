@@ -177,7 +177,8 @@ function tick() {
 	// This equation plots a curve that peaks at noon and hits 0 at
 	// midnight.
 	// light(time) = -(1/12 time - 1)^2 + 1
-	naturalLight = Math.max(0, Math.min(1, -((1/12 * hour - 1) ** 2) + 0.8));
+	// naturalLight = Math.max(0, Math.min(1, -((1/12 * hour - 1) ** 2) + 0.8));
+	naturalLight = -(((1/12) * hour - 1)**2) + 1;
 
 	for (let clientId = 0; clientId < clients.length; clientId++) {
 		if (clients[clientId] === undefined) {
@@ -187,7 +188,7 @@ function tick() {
 
 		if (clients[clientId].isFlashlightEnabled) {
 			const aimDirection = clients[clientId].aimDirection;
-			const intensity = 1;
+			const intensity = (1 + Math.random() - 0.5);
 			lightSources[clientId] = {
 				x: clients[clientId].position.x,
 				y: clients[clientId].position.y,

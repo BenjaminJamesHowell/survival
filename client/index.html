@@ -13,13 +13,6 @@
 		<canvas id="game"></canvas>
 
 		<div id="game-ui">
-			<div class="small" id="minimap-border">
-				<canvas id="minimap"></canvas>
-			</div>
-
-			<button id="fullscreen-minimap-toggle">
-				<i class="bi bi-geo-alt-fill"></i>
-			</button>
 			<button id="flashlight-toggle">
 				<i class="bi bi-lightbulb-fill"></i>
 			</button>
@@ -34,6 +27,22 @@
 
 			<div id="time">
 				<span id="hours"></span>:<span id="minutes"></span>
+			</div>
+
+			<div class="small" id="minimap-ui">
+				<div id="minimap-controls">
+					<button id="fullscreen-minimap-toggle">
+						<i class="bi bi-arrows-fullscreen"></i>
+					</button>
+					<button id="zoom-in-minimap">
+						<i class="bi bi-plus-lg"></i>
+					</button>
+					<button id="zoom-out-minimap">
+						<i class="bi bi-dash-lg"></i>
+					</button>
+				</div>
+
+				<canvas width="200" height="200" id="minimap"></canvas>
 			</div>
 		</div>
 

@@ -116,44 +116,79 @@ button {
 	border: none;
 }
 
-#minimap-border.small #minimap {
-	position: relative;
-	top: 0;
-	left: 0;
-}
-
-#minimap-border.big #minimap {
-	padding: 5px;
-	width: 100%;
-	height: 100%;
-}
-
 #game-ui {
 	display: none;
 }
 
-#minimap-border {
-	border-radius: 2px;
-	background: #000E;
-	margin: 5px;
+/* MINIMAP */
+#minimap-ui {
+	transition:
+		width 0.2s,
+		height 0.2s,
+		bottom 0.2s,
+		right 0.2s,
+		margin 0.2s;
 	position: fixed;
 	z-index: 2;
-	top: 0;
 }
 
-#minimap-border.small {
-	overflow: hidden;
+#minimap-ui.small {
 	width: 300px;
-	height: 300px;
+	height: 200px;
+	bottom: 5px;
+	right: 5px;
+	display: flex;
+	justify-content: right;
 }
 
-#minimap-border.big {
-	width: calc(100vw - 315px);
-	height: calc(100vh - 10px);
-	left: 305px;
+#minimap-ui.big {
+	bottom: 0;
+	right: 0;
+	width: calc(100% - 60px);
+	height: calc(100% - 60px);
+	margin: 30px;
 }
 
-#fullscreen-minimap-toggle {
+#minimap {
+	background-color: #000E;
+	transition:
+		border-radius 0.2s,
+		width 0.2s,
+		height 0.2s;
+}
+
+.small #minimap {
+	border-radius: 50%;
+}
+
+.big #minimap {
+	width: 100%;
+	height: 100%;
+	border-radius: 2px;
+	position: relative;
+	top: -50px;
+	z-index: -1;
+}
+
+#minimap-controls {
+	display: flex;
+	justify-content: center;
+	transition:
+		width 0.2s,
+		height 0.2s,
+		flex-direction 0.2s;
+}
+.small #minimap-controls {
+	width: 50px;
+	flex-direction: column;
+}
+
+.big #minimap-controls {
+	height: 50px;
+	flex-direction: row;
+}
+
+#minimap-controls button {
 	padding: 0;
 	cursor: pointer;
 	width: 30px;
@@ -161,11 +196,21 @@ button {
 	color: white;
 	height: 30px;
 	background: #000E;
-	position: fixed;
-	z-index: 2;
-	top: 305px;
-	left: 0;
-	margin: 5px;
+	border-radius: 50%;
+}
+
+.small #minimap-controls button:nth-child(2n - 1) {
+	position: relative;
+	left: 23px;
+}
+
+.small #minimap-controls button:nth-child(2n) {
+	position: relative;
+	left: 16px;
+}
+
+.big #zoom-out-minimap, .big #zoom-in-minimap {
+		display: none;
 }
 
 #flashlight-toggle {

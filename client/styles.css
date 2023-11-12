@@ -213,21 +213,6 @@ button {
 		display: none;
 }
 
-#flashlight-toggle {
-	padding: 0;
-	cursor: pointer;
-	width: 30px;
-	font-size: 18px;
-	color: white;
-	height: 30px;
-	background: #000E;
-	position: fixed;
-	z-index: 2;
-	top: 305px;
-	left: 35px;
-	margin: 5px;
-}
-
 #pause-toggle {
 	padding: 0;
 	cursor: pointer;

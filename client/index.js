@@ -16,7 +16,6 @@ const fullscreenMinimapToggle = document.querySelector("#fullscreen-minimap-togg
 const zoomInMinimapButton = document.querySelector("#zoom-in-minimap");
 const zoomOutMinimapButton  = document.querySelector("#zoom-out-minimap");
 const minimapUi = document.querySelector("#minimap-ui");
-const flashlightToggle = document.querySelector("#flashlight-toggle");
 const pauseToggle = document.querySelector("#pause-toggle");
 const serverAddressInput = document.querySelector("#server-address");
 const pauseUi = document.querySelector("#pause-ui");
@@ -47,7 +46,6 @@ coloursLabels.map((label, i) =>
 );
 connectButton.addEventListener("click", joinGame);
 fullscreenMinimapToggle.addEventListener("click", toggleMapFullscreen);
-flashlightToggle.addEventListener("click", toggleFlashlight);
 pauseToggle.addEventListener("click", togglePause);
 pauseResume.addEventListener("click", togglePause);
 pauseExit.addEventListener("click", leaveGame);
@@ -505,7 +503,6 @@ function toggleMapFullscreen() {
 }
 
 function toggleFlashlight() {
-	flashlightToggle.blur();
 	isFlashlightEnabled = !isFlashlightEnabled;
 }
 

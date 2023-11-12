@@ -43,6 +43,7 @@ let isOpen = true;
 let lightSources = new Array(10).fill(undefined);
 const { world, height: worldHeight, width: worldWidth } = getWorld();
 const doCollision = true;
+let alerts = [];
 
 const sendUpdateRate = 60;
 const tickRate = 60;
@@ -149,10 +150,13 @@ function sendUpdates() {
 			clientId,
 			tps,
 			time,
+			alerts,
 		};
 
 		socket.send(JSON.stringify(data));
 	}
+
+	alerts = [];
 }
 
 function receiveUpdate(clientId, msg) {
@@ -688,6 +692,20 @@ const commands = {
 			}
 
 			console.log("Syntax error: Expected integer or no arguments");
+		},
+	},
+	alert: {
+		description: "Send an alert to players on the server",
+		run: ([strDuration, ...words]) => {
+			const duration = parseInt(strDuration);
+			if (isNaN(duration)) {
+				console.log("Syntax error: Expected integer duration");
+			}
+
+			alerts.push({
+				duration: duration * 1000,
+				content: words.join(" "),
+			});
 		},
 	},
 };

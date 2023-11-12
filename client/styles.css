@@ -257,6 +257,52 @@ button {
 	color: white;
 }
 
+#alert-outer {
+	position: fixed;
+	top: 50px;
+	left: 0;
+	width: 100vw;
+	transition: top 0.2s;
+	z-index: 5;
+}
+
+#alert-outer.hide {
+	top: -100px;
+}
+
+#alert {
+	width: 100%;
+	margin: auto;
+	max-width: 700px;
+	background: #000E;
+	color: white;
+}
+
+#alert-content {
+	padding: 15px 30px;
+}
+
+#alert-type {
+	color: grey;
+}
+
+#alert-message {
+	font-size: 18px;
+	font-weight: bold;
+}
+
+#alert-progress-outer {
+	width: 100%;
+	background: #000A;
+	height: 1px;
+}
+
+#alert-progress-inner {
+	background: white;
+	height: 100%;
+	width: 0%;
+}
+
 #pause-ui {
 	display: none;
 	position: fixed;
@@ -271,5 +317,4 @@ button {
 	color: white;
 	padding: 5px;
 }
-
 

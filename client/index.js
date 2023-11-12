@@ -24,6 +24,10 @@ const pauseResume = document.querySelector("#pause-resume");
 const pauseExit = document.querySelector("#pause-exit");
 const timeHoursDisplay = document.querySelector("#hours");
 const timeMinutesDisplay = document.querySelector("#minutes");
+const alertMessage = document.querySelector("#alert-message");
+const alertType = document.querySelector("#alert-type");
+const alertProgressInner = document.querySelector("#alert-progress-inner");
+const alertOuter = document.querySelector("#alert-outer");
 
 const ctx = canvas.getContext("2d");
 const minimapCtx = minimapCanvas.getContext("2d");
@@ -52,6 +56,8 @@ addEventListener("keypress", onKeypress);
 addEventListener("keydown", onKeydown);
 addEventListener("keyup", onKeyup);
 addEventListener("mousemove", onMousemove);
+
+let alerts = [];
 
 // Game
 let keys;
@@ -201,7 +207,7 @@ async function openWebSocket(server) {
 		try {
 			socket = new WebSocket(server);
 		} catch (e) {
-			alert("Connection error");
+			addAlert(e, 3000, "ERROR");
 			leaveGame();
 			throw e;
 		}
@@ -209,7 +215,7 @@ async function openWebSocket(server) {
 		socket.addEventListener("message", receiveUpdate);
 
 		socket.addEventListener("error", _ => {
-			alert("Connection error");
+			addAlert("Connection error", 3000, "ERROR");
 			leaveGame();
 		});
 
@@ -222,7 +228,7 @@ async function openWebSocket(server) {
 function receiveUpdate(msg) {
 	const data = JSON.parse(msg.data);
 	if (data.status === "error") {
-		alert(data.message);
+		addAlert(data.message, 3000, "ERROR");
 		leaveGame();
 		return;
 	}
@@ -234,6 +240,9 @@ function receiveUpdate(msg) {
 	clientId = data.clientId;
 	tps = data.tps;
 	time = data.time;
+	for (const { content, duration } of data.alerts) {
+		addAlert(content, duration, "SERVER");
+	}
 
 	decodeSorroundings(data.sorroundings);
 }
@@ -513,6 +522,36 @@ function togglePause() {
 	} else {
 		pauseUi.style.display = "none";
 	}
+}
+
+function addAlert(content, duration, type) {
+	alerts.push({ content, duration, type });
+
+	if (alerts.length === 1) {
+		sendAlert(0);
+	}
+}
+
+async function sendAlert() {
+	const { content, duration, type } = alerts[0];
+	alertMessage.innerText = content;
+	alertType.innerText = type;
+	alertOuter.classList.remove("hide");
+	alertProgressInner.animate([
+		{ width: "0%" },
+		{ width: "100%" },
+	], {
+		duration,
+	});
+
+	setTimeout(() => {
+		alertOuter.classList.add("hide");
+
+		alerts.shift();
+		if (alerts.length > 0) {
+			sendAlert();
+		}
+	}, duration);
 }
 
 function onKeypress({ code }) {

@@ -1,0 +1,302 @@
+@import "https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap";
+@import "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css";
+* {
+  box-sizing: border-box;
+}
+
+.show {
+  display: block;
+}
+
+.hide {
+  display: none;
+}
+
+body {
+  --red: #df6060;
+  --yellow: #dfdf60;
+  --green: #80df60;
+  --light-blue: #60bfdf;
+  --blue: #6080df;
+  --purple: #9f60df;
+  --pink: #df60df;
+  background-color: #6495ed;
+  margin: 0;
+  font-family: Source Code Pro, monospace;
+  overflow: hidden;
+}
+
+#ui {
+  opacity: 1;
+  color: #fff;
+  background: #000e;
+  width: 100vw;
+  height: 100vh;
+  padding-top: 25vh;
+  transition: opacity .5s;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+#ui.hide {
+  opacity: 0;
+}
+
+#time {
+  z-index: 2;
+  color: #fff;
+  background: #000e;
+  border-radius: 2px;
+  padding: 5px;
+  position: fixed;
+  bottom: 5px;
+  left: 5px;
+}
+
+#connect, #loading {
+  background: #0005;
+  border-radius: 2px;
+  width: 500px;
+  margin: auto;
+  padding: 15px;
+  overflow: hidden;
+}
+
+#loading {
+  text-align: center;
+}
+
+label, #connect p {
+  margin: 0;
+  font-size: 15px;
+  display: block;
+}
+
+input, #colours, button {
+  cursor: pointer;
+  color: #fff;
+  background: #3333;
+  border: 1px solid #0003;
+  border-radius: 2px;
+  width: 100%;
+  margin: 5px 0;
+  padding: 5px 10px;
+  font-family: inherit;
+  transition: background-color .25s;
+  display: block;
+}
+
+input:hover, button:hover {
+  background: #333e !important;
+}
+
+input:focus, button:focus {
+  outline: none;
+  color: #000 !important;
+  background: #fff !important;
+}
+
+label[for="team-colour"] {
+  position: relative;
+  bottom: 7px;
+}
+
+#team-colour, label[for="team-colour"] {
+  width: 100px;
+  display: inline;
+}
+
+div input:checked ~ label {
+  border: 2px solid #aaa !important;
+}
+
+#mid {
+  background-color: purple;
+  width: 2px;
+  height: 2px;
+  display: none;
+  position: fixed;
+  top: calc(50vh - 1px);
+  left: calc(50vw - 1px);
+}
+
+button {
+  border: none;
+  outline: none;
+}
+
+#minimap-ui {
+  z-index: 2;
+  transition: width .2s, height .2s, bottom .2s, right .2s, margin .2s;
+  position: fixed;
+}
+
+#minimap-ui.small {
+  justify-content: right;
+  width: 300px;
+  height: 200px;
+  display: flex;
+  bottom: 5px;
+  right: 5px;
+}
+
+#minimap-ui.big {
+  width: calc(100% - 60px);
+  height: calc(100% - 60px);
+  margin: 30px;
+  bottom: 0;
+  right: 0;
+}
+
+#minimap {
+  background-color: #000e;
+  transition: border-radius .2s, width .2s, height .2s;
+}
+
+.small #minimap {
+  border-radius: 50%;
+}
+
+.big #minimap {
+  z-index: -1;
+  border-radius: 2px;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  top: -50px;
+}
+
+#minimap-controls {
+  justify-content: center;
+  transition: width .2s, height .2s, flex-direction .2s;
+  display: flex;
+}
+
+.small #minimap-controls {
+  flex-direction: column;
+  width: 50px;
+}
+
+.big #minimap-controls {
+  flex-direction: row;
+  height: 50px;
+}
+
+#minimap-controls button {
+  cursor: pointer;
+  color: #fff;
+  background: #000e;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 18px;
+}
+
+.small #minimap-controls button:nth-child(2n-1) {
+  position: relative;
+  left: 23px;
+}
+
+.small #minimap-controls button:nth-child(2n) {
+  position: relative;
+  left: 16px;
+}
+
+#pause-toggle {
+  cursor: pointer;
+  color: #fff;
+  z-index: 2;
+  background: #000e;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  font-size: 18px;
+  position: fixed;
+  bottom: 5px;
+  left: 268px;
+}
+
+#info {
+  z-index: 2;
+  color: #fff;
+  background: #000e;
+  border-radius: 2px;
+  width: 195px;
+  height: 30px;
+  padding: 5px;
+  position: fixed;
+  bottom: 5px;
+  left: 68px;
+}
+
+#alert-outer {
+  z-index: 5;
+  width: 100vw;
+  transition: top .2s;
+  position: fixed;
+  top: 50px;
+  left: 0;
+}
+
+#alert-outer.hide {
+  display: block;
+  top: -100px;
+}
+
+#alert {
+  color: #fff;
+  background: #000e;
+  width: 100%;
+  max-width: 700px;
+  margin: auto;
+}
+
+#alert-content {
+  padding: 15px 30px;
+}
+
+#alert-type {
+  color: gray;
+  text-transform: uppercase;
+}
+
+#alert-message {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+#alert-progress-outer {
+  background: #000a;
+  width: 100%;
+  height: 1px;
+}
+
+#alert-progress-inner {
+  background: #fff;
+  width: 0%;
+  height: 100%;
+}
+
+#pause-ui {
+  z-index: 2;
+  text-align: center;
+  color: #fff;
+  background: #000e;
+  width: 300px;
+  height: 300px;
+  margin: auto;
+  padding: 5px;
+  position: fixed;
+  top: calc(50vh - 150px);
+  left: calc(50vw - 150px);
+}
+
+noscript {
+  background-color: var(--red);
+  color: #fff;
+}
+
+/*# sourceMappingURL=index.184c0be7.css.map */

@@ -5,17 +5,20 @@
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
-		"watch": "tsc --watch",
-		"build": "tsc",
-		"client": "cd public && lite-server .",
-		"server": "nodemon ./public/js/webserver.js",
-		"dev": "concurrently --handle-input \"npm:server\" \"npm:watch\" \"npm:build\" \"npm:client\""
+		"client:run": "parcel serve ./src/index.html --dist-dir ./dist/client",
+		"client:watch": "parcel watch ./src/index.html --dist-dir ./dist/client",
+
+		"server:run": "nodemon ./dist/server/webserver.js",
+		"server:watch": "tsc --watch",
+
+		"dev": "concurrently --handle-input \"npm:server:watch\" \"npm:server:run\" \"npm:client:run\""
 	},
 	"author": "",
 	"devDependencies": {
 		"@types/ws": "^8.5.10",
 		"concurrently": "^8.2.2",
 		"nodemon": "^3.0.2",
+		"parcel": "^2.10.3",
 		"typescript": "^5.2.2"
 	},
 	"dependencies": {

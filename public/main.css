@@ -6,11 +6,27 @@
 	box-sizing: border-box;
 }
 
+.show {
+	display: block;
+}
+
+.hide {
+	display: none;
+}
+
 body {
 	overflow: hidden;
 	margin: 0;
 	font-family: 'Source Code Pro', monospace;
 	background-color: CornflowerBlue;
+
+	--red: rgb(223,  96,  96);
+	--yellow: rgb(223, 223,  96);
+	--green: rgb(128, 223,  96);
+	--light-blue: rgb( 96, 191, 223);
+	--blue: rgb( 96, 128, 223);
+	--purple: rgb(159,  96, 223);
+	--pink: rgb(223,  96, 223);
 }
 
 #ui {
@@ -41,13 +57,17 @@ body {
 	background: #000E;
 }
 
-#connect {
+#connect, #loading {
 	margin: auto;
 	background: #00000055;
 	border-radius: 2px;
 	padding: 15px;
 	width: 500px;
 	overflow: hidden;
+}
+
+#loading {
+	text-align: center;
 }
 
 label, #connect p {
@@ -79,23 +99,13 @@ input:focus, button:focus {
 	outline: none;
 	color: black !important;
 }
-
-#colours {
-	display: flex;
+label[for=team-colour] {
+	position: relative;
+	bottom: 7px;
 }
-
-#colours input {
-	position: absolute;
-	top: -100px;
-}
-
-#colours label {
-	width: 50px;
-	height: 25px;
-	margin: auto 5px;
-	border-radius: 3px;
-	border: 2px solid #000;
-	cursor: pointer;
+#team-colour, label[for=team-colour] {
+	width: 100px;
+	display: inline;
 }
 
 div input:checked~label {
@@ -115,10 +125,6 @@ div input:checked~label {
 button {
 	outline: none;
 	border: none;
-}
-
-#game-ui {
-	display: none;
 }
 
 /* MINIMAP */
@@ -210,10 +216,6 @@ button {
 	left: 16px;
 }
 
-.big #zoom-out-minimap, .big #zoom-in-minimap {
-		display: none;
-}
-
 #pause-toggle {
 	padding: 0;
 	cursor: pointer;
@@ -289,7 +291,6 @@ button {
 }
 
 #pause-ui {
-	display: none;
 	position: fixed;
 	top: calc(50vh - 150px);
 	left: calc(50vw - 150px);
@@ -303,3 +304,7 @@ button {
 	padding: 5px;
 }
 
+noscript {
+	background-color: var(--red);
+	color: white;
+}

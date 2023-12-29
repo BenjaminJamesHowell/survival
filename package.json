@@ -1,0 +1,28 @@
+{
+	"name": "game",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"watch": "tsc --watch",
+		"build": "tsc",
+		"client": "cd public && lite-server .",
+		"server": "nodemon ./public/js/webserver.js",
+		"dev": "concurrently --handle-input \"npm:server\" \"npm:watch\" \"npm:build\" \"npm:client\""
+	},
+	"author": "",
+	"devDependencies": {
+		"@types/ws": "^8.5.10",
+		"concurrently": "^8.2.2",
+		"nodemon": "^3.0.2",
+		"typescript": "^5.2.2"
+	},
+	"dependencies": {
+		"@types/node": "^20.10.4",
+		"alea": "^1.0.1",
+		"simplex-noise": "^4.0.1",
+		"ts-perlin-simplex": "^0.0.3",
+		"ws": "^8.15.1"
+	}
+}

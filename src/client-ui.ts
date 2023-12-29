@@ -1,3 +1,4 @@
+import { ErrorEvent } from "ws";
 import { ClientConfig, ClientState, createClient, getTileLight, receiveUpdate, sendUpdate } from "./client.js";
 import { ServerUpdate } from "./server.js";
 import { tileColours } from "./world.js";
@@ -22,6 +23,7 @@ const elements = getElements([
 	"#pause-exit",
 	"#hours",
 	"#minutes",
+	"#alert-outer",
 	"#alert-message",
 	"#alert-type",
 	"#alert-progress-inner",
@@ -74,14 +76,14 @@ function getElements(selectors: string[]): Map<string, Element> {
 	return result;
 }
 
-function getElement(selector: string): Element {
+function getElement(selector: string): HTMLElement {
 	const element = elements.get(selector);
 
 	if (element === undefined) {
 		throw new Error(`Could not find element: ${selector}`); 
 	}
 
-	return element;
+	return element as HTMLElement;
 }
 
 function showElement(element: Element) {
@@ -129,7 +131,6 @@ function connect() {
 
 	const serverAddress = getElement("#server-address") as HTMLInputElement;
 	const server = `ws://${serverAddress.value}`;
-	// TODO: Error handling
 	const socket = new WebSocket(server);
 
 	const config: ClientConfig = {
@@ -139,7 +140,10 @@ function connect() {
 	const client = createClient(config);
 
 	socket.addEventListener("error", () => {
-		// TODO: More error handling
+		isConnected = false;
+		displayAlert("error", "Connection Error");
+		mainMenu();
+		return;
 	});
 	socket.addEventListener("message", ({ data }) => {
 		// TODO: JSON error handling
@@ -252,5 +256,21 @@ function drawRect(x: number, y: number, w: number, h: number, c: string) {
 
 	ctx.fillStyle = c;
 	ctx.fillRect(Math.round(x), canvas.height - Math.round(y), Math.round(w), Math.round(-h));
+}
+
+function displayAlert(type: string, message: string) {
+	getElement("#alert-type").innerText = type;
+	getElement("#alert-message").innerText = message;
+
+	showElement(getElement("#alert-outer"));
+
+	getElement("#alert-progress-inner").animate(
+		[{ width: "0%" }, { width: "100%" }],
+		{ easing: "linear", duration: 3000 },
+	).play();
+
+	setTimeout(() => {
+		hideElement(getElement("#alert-outer"));
+	}, 3000);
 }
 

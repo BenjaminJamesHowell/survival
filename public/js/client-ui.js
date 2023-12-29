@@ -20,6 +20,7 @@ const elements = getElements([
     "#pause-exit",
     "#hours",
     "#minutes",
+    "#alert-outer",
     "#alert-message",
     "#alert-type",
     "#alert-progress-inner",
@@ -107,7 +108,6 @@ function connect() {
     const colour = colourBox.value;
     const serverAddress = getElement("#server-address");
     const server = `ws://${serverAddress.value}`;
-    // TODO: Error handling
     const socket = new WebSocket(server);
     const config = {
         sendMessage: msg => socket.send(msg),
@@ -115,7 +115,10 @@ function connect() {
     };
     const client = createClient(config);
     socket.addEventListener("error", () => {
-        // TODO: More error handling
+        isConnected = false;
+        displayAlert("error", "Connection Error");
+        mainMenu();
+        return;
     });
     socket.addEventListener("message", ({ data }) => {
         // TODO: JSON error handling
@@ -189,4 +192,13 @@ function drawRect(x, y, w, h, c) {
     }
     ctx.fillStyle = c;
     ctx.fillRect(Math.round(x), canvas.height - Math.round(y), Math.round(w), Math.round(-h));
+}
+function displayAlert(type, message) {
+    getElement("#alert-type").innerText = type;
+    getElement("#alert-message").innerText = message;
+    showElement(getElement("#alert-outer"));
+    getElement("#alert-progress-inner").animate([{ width: "0%" }, { width: "100%" }], { easing: "linear", duration: 3000 }).play();
+    setTimeout(() => {
+        hideElement(getElement("#alert-outer"));
+    }, 3000);
 }

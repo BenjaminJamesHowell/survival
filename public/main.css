@@ -255,6 +255,7 @@ button {
 
 #alert-outer.hide {
 	top: -100px;
+	display: block;
 }
 
 #alert {
@@ -271,6 +272,7 @@ button {
 
 #alert-type {
 	color: grey;
+	text-transform: uppercase;
 }
 
 #alert-message {

@@ -16,8 +16,13 @@ export type ClientState = {
 	};
 };
 
+export type ClientUpdate = {
+	keys: Map<string, boolean>;
+	colour: string;
+};
+
 export type ClientConfig = {
-	sendMessage: (msg: string) => void;
+	sendMessage: (update: ClientUpdate) => void;
 	colour: string;
 };
 
@@ -70,11 +75,12 @@ export function receiveUpdate(client: ClientState, message: ServerUpdate) {
 }
 
 export function sendUpdate(client: ClientState, keys: Map<string, boolean>) {
-	const data = {
-		keys: Object.fromEntries(keys),
+	const update: ClientUpdate = {
+		keys: keys,
 		colour: client.config.colour,
 	};
-	client.config.sendMessage(JSON.stringify(data));
+
+	client.config.sendMessage(update);
 }
 
 export function getTileLight(client: ClientState, position: Position): number {

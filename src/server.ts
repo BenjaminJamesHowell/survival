@@ -5,6 +5,7 @@ import { Player, PlayerUpdate, getPlayerUpdates } from "./player.js";
 import { EncodedWorldUpdate, Position, WorldConfig, WorldState, encodeWorldUpdate, getWorldUpdate } from "./world.js";
 import { LightSources, lightTick, getLightUpdates, LightUpdates  } from "./light.js";
 import { generateWorld } from "./worldgen.js";
+import { ClientUpdate } from "./client.js";
 
 // Server types
 export type ServerState = {
@@ -169,18 +170,12 @@ export function getUpdate(server: ServerState, id: number): ServerUpdate {
 	};
 }
 
-export function receiveUpdate(server: ServerState, id: number, msg: string) {
+export function receiveUpdate(server: ServerState, id: number, update: ClientUpdate) {
 	const player = server.players[id];
 	if (player === undefined) {
 		return;
 	}
 
-	const data = JSON.parse(msg);
-	if (data.keys === undefined) {
-		throw new Error("Invalid message received from client");
-	}
-	for (const key of Object.keys(data.keys)) {
-		player.keys.set(key, data.keys[key]);
-	}
-	player.colour = data.colour;
+	player.keys = update.keys;
+	player.colour = update.colour;
 }

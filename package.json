@@ -2,7 +2,6 @@
 	"name": "game",
 	"version": "1.0.0",
 	"description": "",
-	"main": "index.js",
 	"type": "module",
 	"scripts": {
 		"client:run": "parcel serve ./src/index.html --dist-dir ./dist/client",
@@ -10,8 +9,11 @@
 
 		"server:run": "nodemon ./dist/server/webserver.js",
 		"server:watch": "tsc --watch",
+		"server:build": "tsc",
 
-		"dev": "concurrently --handle-input \"npm:server:watch\" \"npm:server:run\" \"npm:client:run\""
+		"dev": "npm run clean && npm run server:build && concurrently --handle-input \"npm:server:run\" \"npm:server:watch\" \"npm:client:run\"",
+
+		"clean": "rm -r ./dist/client/** && rm -r ./dist/server/** && rm -r .parcel-cache"
 	},
 	"author": "",
 	"devDependencies": {

@@ -14,7 +14,7 @@ export type Player = {
 	isFlashlightEnabled: boolean;
 	aimDirection: number;
 	keys: Map<string, boolean>;
-	pushMessage: (message: string) => void;
+	pushMessage: (message: ServerUpdate) => void;
 	closeConnection: () => void;
 };
 
@@ -28,7 +28,7 @@ export type PlayerUpdate = {
 
 export function addPlayer(
 	server: ServerState,
-	pushMessage: (message: string) => void,
+	pushMessage: (message: ServerUpdate) => void,
 	closeConnection: () => void,
 ): Player {
 	let id = 0;
@@ -93,7 +93,7 @@ export function kickPlayer(server: ServerState, player: Player) {
 		message: "You were kicked from the server!",
 	};
 
-	player.pushMessage(JSON.stringify(message));
+	player.pushMessage(message);
 	player.closeConnection();
 	removePlayer(server, player);
 }

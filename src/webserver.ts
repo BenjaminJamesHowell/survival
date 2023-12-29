@@ -6,6 +6,7 @@ import { readFileSync, existsSync } from "fs";
 import { ServerConfig, getUpdate, receiveUpdate, serverTick, setupServer } from "./server.js";
 import { removePlayer, addPlayer, kickPlayer } from "./player.js";
 import { createInterface } from "readline";
+import { ClientUpdate } from "./client.js";
 
 console.log("Loading server config");
 if (!existsSync("./config.json")) {
@@ -33,7 +34,7 @@ server.on("connection", connection => {
 	const player = addPlayer(
 		serverState,
 		(message) => {
-			connection.send(message);
+			connection.send(JSON.stringify(message));
 		},
 		() => {
 			clearInterval(updateTimer);
@@ -51,7 +52,20 @@ server.on("connection", connection => {
 
 	// Liseten for updates
 	connection.on("message", msg => {
-		receiveUpdate(serverState, player.id, msg.toString())
+		const data = JSON.parse(msg.toString());
+
+		// The keys map is decoded into an object so we need to turn it
+		// back into a map.
+		const keys = new Map();
+		for (const key of Object.keys(data.keys)) {
+			keys.set(key, data.keys[key]);
+		}
+
+		const update: ClientUpdate = {
+			...data,
+			keys,
+		};
+		receiveUpdate(serverState, player.id, update)
 	});
 
 	connection.on("close", () => {

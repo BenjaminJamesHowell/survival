@@ -1,14 +1,16 @@
 import { ErrorEvent } from "ws";
-import { ClientConfig, ClientState, createClient, getTileLight, receiveUpdate, sendUpdate } from "./client.js";
-import { ServerUpdate } from "./server.js";
+import { ClientConfig, ClientState, createClient, getTileLight, receiveUpdate as clientReceiveUpdate, sendUpdate } from "./client.js";
+import { ServerUpdate, getUpdate, serverTick, setupServer, receiveUpdate as serverReceiveUpdate, ServerConfig } from "./server.js";
 import { tileColours } from "./world.js";
+import { addPlayer } from "./player.js";
 
 const elements = getElements([
 	"#game",
 	"#minimap",
 	"#fps",
 	"#tps",
-	"#connect-button",
+	"#multiplayer-start-button",
+	"#singleplayer-start-button",
 	"#connect",
 	"#game-ui",
 	"#ui",
@@ -41,7 +43,7 @@ const cameraOffset = {
 	y: innerHeight / 2,
 };
 let keys = new Map();
-let isConnected = false;
+let isInGame = false;
 
 let fps = 0;
 let delta = 0;
@@ -58,7 +60,8 @@ addEventListener("keyup", ({ code }) => {
 });
 
 mainMenu();
-getElement("#connect-button").addEventListener("click", connect);
+getElement("#multiplayer-start-button").addEventListener("click", multiplayer);
+getElement("#singleplayer-start-button").addEventListener("click", singleplayer);
 
 function getElements(selectors: string[]): Map<string, Element> {
 	const result: Map<string, Element> = new Map();
@@ -119,11 +122,88 @@ function inGame() {
 	hideElement(getElement("#pause-ui"));
 }
 
-function connect() {
-	if (isConnected) {
+function singleplayer() {
+	if (isInGame) {
 		return;
 	}
-	isConnected = true;
+	isInGame = true;
+	loadingMenu();
+
+	const serverConfig: ServerConfig = {
+		port: 0,
+		world: {
+			height: 1000,
+			width: 1000,
+			seed: 1,
+			oceaness: 0.7,
+			extremeness: 0.001,
+			humidity: 0,
+			temperature: 0,
+		},
+		fov: {
+			width: 41,
+			height: 21,
+		},
+		maxPlayers: 1,
+		playerAcceleration: 0.05,
+	};
+	const server = setupServer(serverConfig);
+
+	const player = addPlayer(
+		server,
+		(message) => {
+			// Send alert to client
+			clientReceiveUpdate(client, message);
+		},
+		() => {
+			// Called when the player disconnects
+		},
+	);
+
+	const colour = "red";
+	const clientConfig: ClientConfig = {
+		sendMessage: msg => {
+			// Send a message to the server
+			serverReceiveUpdate(server, player.id, msg);
+		},
+		colour,
+	};
+	const client = createClient(clientConfig);
+
+	setTimeout(inGame, 1000);
+	renderWorld(client);
+	setInterval(() => {
+		// Client sends update to server
+		sendUpdate(client, keys)
+
+		// Server tick
+		serverTick(server);
+
+		// Server sends update to client
+		const update = getUpdate(server, player.id);
+		clientReceiveUpdate(client, update);
+
+		if (keys.get("Equal")) {
+			tileSize++;
+		}
+		if (keys.get("Minus")) {
+			tileSize--;
+		}
+
+		if (tileSize > 70) {
+			tileSize = 70;
+		}
+		if (tileSize < 10) {
+			tileSize = 10;
+		}
+	}, 1000 / 60);
+}
+
+function multiplayer() {
+	if (isInGame) {
+		return;
+	}
+	isInGame = true;
 	loadingMenu();
 
 	const colourBox = getElement("#team-colour") as HTMLInputElement;
@@ -134,13 +214,19 @@ function connect() {
 	const socket = new WebSocket(server);
 
 	const config: ClientConfig = {
-		sendMessage: msg => socket.send(msg),
+		sendMessage: update => {
+			// The map needs to be converted to be encoded properly
+			socket.send(JSON.stringify({
+				...update,
+				keys: Object.fromEntries(update.keys),
+			}))
+		},
 		colour,
 	};
 	const client = createClient(config);
 
 	socket.addEventListener("error", () => {
-		isConnected = false;
+		isInGame = false;
 		displayAlert("error", "Connection Error");
 		mainMenu();
 		return;
@@ -148,7 +234,7 @@ function connect() {
 	socket.addEventListener("message", ({ data }) => {
 		// TODO: JSON error handling
 		const update = JSON.parse(data) as ServerUpdate;
-		receiveUpdate(client, update);
+		clientReceiveUpdate(client, update);
 	});
 	socket.addEventListener("open", () => {
 		inGame();

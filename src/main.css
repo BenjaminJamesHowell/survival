@@ -57,20 +57,60 @@ body {
 	background: #000E;
 }
 
-#connect, #loading {
+#menu-tabs {
+	width: 500px;
+	margin: auto;
+	background: #00000055;
+	border-radius: 2px;
+	padding: 5px;
+	width: 500px;
+	overflow: hidden;
+	margin-bottom: 5px;
+}
+
+#menu-tabs.show {
+	display: flex;
+}
+
+#menu-tabs input {
+	margin: 5px;
+}
+
+#multiplayer-menu.hide {
+	display: block;
+	left: 100vw;
+}
+
+#singleplayer-menu.hide {
+	display: block;
+	left: -100vw;
+}
+
+#multiplayer-menu, #singleplayer-menu, #loading {
 	margin: auto;
 	background: #00000055;
 	border-radius: 2px;
 	padding: 15px;
 	width: 500px;
 	overflow: hidden;
+	left: 0;
+	right: 0;
+	position: relative;
+	transition: left 0.5s, right 0.5s;
+	height: 300px;
+}
+
+#multiplayer-menu {
+	top: -300px;
 }
 
 #loading {
+	top: -550px;
 	text-align: center;
+	height: auto;
 }
 
-label, #connect p {
+label, p {
 	font-size: 15px;
 	margin: 0;
 	display: block;
@@ -262,7 +302,7 @@ button {
 	width: 100%;
 	margin: auto;
 	max-width: 700px;
-	background: #000E;
+	background: #0005;
 	color: white;
 }
 
@@ -282,7 +322,7 @@ button {
 
 #alert-progress-outer {
 	width: 100%;
-	background: #000A;
+	background: #0005;
 	height: 1px;
 }
 

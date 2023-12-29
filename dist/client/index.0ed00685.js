@@ -584,9 +584,13 @@ const elements = getElements([
     "#minimap",
     "#fps",
     "#tps",
+    "#menu-tabs",
     "#multiplayer-start-button",
     "#singleplayer-start-button",
-    "#connect",
+    "#singleplayer-menu",
+    "#multiplayer-menu",
+    "#singleplayer-menu-open-button",
+    "#multiplayer-menu-open-button",
     "#game-ui",
     "#ui",
     "#fullscreen-minimap-toggle",
@@ -629,9 +633,11 @@ addEventListener("keydown", ({ code })=>{
 addEventListener("keyup", ({ code })=>{
     keys.set(code, false);
 });
-mainMenu();
+singleplayerMenu();
 getElement("#multiplayer-start-button").addEventListener("click", multiplayer);
 getElement("#singleplayer-start-button").addEventListener("click", singleplayer);
+getElement("#singleplayer-menu-open-button").addEventListener("click", singleplayerMenu);
+getElement("#multiplayer-menu-open-button").addEventListener("click", multiplayerMenu);
 function getElements(selectors) {
     const result = new Map();
     for (const selector of selectors){
@@ -654,23 +660,37 @@ function hideElement(element) {
     element.classList.add("hide");
     element.classList.remove("show");
 }
-function mainMenu() {
+function singleplayerMenu() {
     hideElement(getElement("#game-ui"));
     hideElement(getElement("#pause-ui"));
     hideElement(getElement("#loading"));
     showElement(getElement("#ui"));
-    showElement(getElement("#connect"));
+    showElement(getElement("#singleplayer-menu"));
+    showElement(getElement("#menu-tabs"));
+    hideElement(getElement("#multiplayer-menu"));
+}
+function multiplayerMenu() {
+    hideElement(getElement("#game-ui"));
+    hideElement(getElement("#pause-ui"));
+    hideElement(getElement("#loading"));
+    showElement(getElement("#ui"));
+    hideElement(getElement("#singleplayer-menu"));
+    showElement(getElement("#menu-tabs"));
+    showElement(getElement("#multiplayer-menu"));
 }
 function loadingMenu() {
     hideElement(getElement("#game-ui"));
     hideElement(getElement("#pause-ui"));
     showElement(getElement("#ui"));
     showElement(getElement("#loading"));
-    hideElement(getElement("#connect"));
+    hideElement(getElement("#multiplayer-menu"));
+    hideElement(getElement("#menu-tabs"));
+    hideElement(getElement("#singleplayer-menu"));
 }
 function inGame() {
     hideElement(getElement("#ui"));
-    hideElement(getElement("#connect"));
+    hideElement(getElement("#multiplayer-menu"));
+    hideElement(getElement("#singleplayer-menu"));
     hideElement(getElement("#loading"));
     showElement(getElement("#game-ui"));
     hideElement(getElement("#pause-ui"));
@@ -752,7 +772,7 @@ function multiplayer() {
     socket.addEventListener("error", ()=>{
         isInGame = false;
         displayAlert("error", "Connection Error");
-        mainMenu();
+        singleplayerMenu();
         return;
     });
     socket.addEventListener("message", ({ data })=>{

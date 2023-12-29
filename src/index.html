@@ -67,15 +67,25 @@
 			<noscript>
 				Please enable JavaScript in your browser.
 			</noscript>
-			<div id="connect">
+
+			<div id="menu-tabs">
+				<input type="button" id="singleplayer-menu-open-button" value="Singleplayer">
+				<input type="button" id="multiplayer-menu-open-button" value="Multiplayer">
+			</div>
+
+			<div id="singleplayer-menu" class="show">
+				<input type="button" id="singleplayer-start-button" value="Start Game" />
+
+			</div>
+
+			<div id="multiplayer-menu" class="hide">
 				<label for="server-address">Server Address:</label>
 				<input placeholder="xxx.xxx.xxx.xxx:xxxx" type="text" id="server-address" />
 
 				<label for="team-colour">Team Colour:</label>
 				<input type="color" id="team-colour" value="#FF0000">
 
-				<input type="button" id="multiplayer-start-button" value="Join Multiplayer Game" />
-				<input type="button" id="singleplayer-start-button" value="Start Singleplayer Game" />
+				<input type="button" id="multiplayer-start-button" value="Join Game" />
 
 			</div>
 

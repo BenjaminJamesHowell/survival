@@ -154,11 +154,13 @@ function singleplayer() {
 		world: {
 			height: 1000,
 			width: 1000,
-			seed: 1,
+			seed: Math.floor(Math.random() * 1000000000),
 			oceaness: 0.7,
+			beachness: 0.1,
 			extremeness: 0.001,
 			humidity: 0,
 			temperature: 0,
+			wierdness: 0.34,
 		},
 		fov: {
 			width: 41,

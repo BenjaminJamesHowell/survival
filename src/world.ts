@@ -51,10 +51,29 @@ tiles.set("water", 1); // ocean
 tiles.set("grass", 2); // hot plains, forest, dense forst
 tiles.set("cold_grass", 3); // cold plains, ice plains, ice forst, dense ice forest
 tiles.set("snow", 4); // ice plains, ice forst, dense ice forst
-tiles.set("ice", 5); // replaces some water in ice biomes
+tiles.set("ice", 5); // replaces some water in ice biomes, ice_beach
 tiles.set("hot_grass", 6); // savanna, swamp, jungle
 tiles.set("swamp_water", 7); // swamp
-tiles.set("sand", 8); // desert
+tiles.set("sand", 8); // desert, sand_beach
+tiles.set("pebbles", 9); // pebble_beach
+
+tiles.set("tree", 10);
+
+export const grassTypes: Map<Biome, TileType> = new Map();
+grassTypes.set("forest", 2);
+grassTypes.set("dense_forest", 2);
+grassTypes.set("hot_plains", 2);
+grassTypes.set("cold_plains", 3);
+grassTypes.set("ice_plains", 3);
+grassTypes.set("ice_forest", 3);
+grassTypes.set("dense_ice_forest", 3);
+grassTypes.set("ice_beach", 5);
+grassTypes.set("savanna", 6);
+grassTypes.set("swamp", 6);
+grassTypes.set("jungle", 6);
+grassTypes.set("desert", 8);
+grassTypes.set("sand_beach", 8);
+grassTypes.set("pebble_beach", 9);
 
 export const tileColours: Map<TileType, [number, number, number]> = new Map();
 tileColours.set(0, [0, 0, 0]);
@@ -66,15 +85,40 @@ tileColours.set(5, [174, 214, 241]);
 tileColours.set(6, [24, 106, 59]);
 tileColours.set(7, [11, 83, 69]);
 tileColours.set(8, [244, 208, 63]);
+tileColours.set(9, [100, 100, 100]);
+
+tileColours.set(10, [46, 16, 4]);
+
+export type Biome
+	= "hot_plains"
+	| "forest"
+	| "dense_forest"
+	| "cold_plains"
+	| "ice_plains"
+	| "ice_forest"
+	| "dense_ice_forest"
+	| "savanna"
+	| "swamp"
+	| "jungle"
+	| "desert"
+	| "ice_beach"
+	| "pebble_beach"
+	| "sand_beach";
+
+export type DecorationType
+	= "none"
+	| "tree";
 
 export type WorldConfig = {
 	height: number;
 	width: number;
 	seed: number;
 	oceaness: number;
+	beachness: number;
 	extremeness: number;
 	humidity: number;
 	temperature: number;
+	wierdness: number;
 };
 
 export function getTileId(name: string): number {

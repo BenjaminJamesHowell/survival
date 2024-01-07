@@ -1,11 +1,9 @@
 import { ServerState, ServerUpdate } from "./server.js";
+import { Position } from "./world.js";
 
 export type Player = {
 	colour: string;
-	position: {
-		x: number;
-		y: number;
-	};
+	position: Position;
 	velocity: {
 		x: number;
 		y: number;
@@ -20,10 +18,7 @@ export type Player = {
 
 export type PlayerUpdate = {
 	colour: string;
-	position: {
-		x: number;
-		y: number;
-	};
+	position: Position;
 };
 
 export function addPlayer(

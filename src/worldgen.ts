@@ -1,5 +1,5 @@
 import alea from "alea";
-import { WorldConfig, WorldState, WorldTile, getTileId } from "./world.js";
+import { Biome, DecorationType, TileType, WorldConfig, WorldState, WorldTile, getTileId, grassTypes } from "./world.js";
 import { NoiseFunction2D, createNoise2D } from "simplex-noise";
 
 export function generateWorld(config: WorldConfig): WorldState {
@@ -70,140 +70,217 @@ function getTile(
 		+ humidityNoise(x * extremeness * 2, y * extremeness * 2) / 2
 		+ terrainNoise(x * extremeness * 4, y * extremeness * 4) / 4;
 
-	const alternate = alternateNoise(x, y);
+	const alternate = alternateNoise(x ^ 2, y ^ 2);
 
-	const wierdness = 0.34;
-	const isDesert =
-		temperature >= wierdness
-		&& humidity < -wierdness;
+	const wierdness = config.wierdness;
 
-	const isSavanna =
-		temperature >= wierdness
-		&& humidity >= -wierdness
-		&& humidity < 0;
+	const type = getTileType(
+		config,
+		isLand,
+		elevation,
+		temperature,
+		humidity,
+		wierdness,
+		alternate,
+	);
 
-	const isSwamp =
-		temperature >= wierdness
-		&& humidity >= 0
-		&& humidity < wierdness;
-
-	const isJungle =
-		temperature >= wierdness
-		&& humidity >= wierdness;
-
-	const isHotPlains =
-		temperature >= 0
-		&& temperature < wierdness
-		&& humidity < 0;
-
-	const isColdPlains =
-		temperature >= -wierdness
-		&& temperature < 0
-		&& humidity < 0;
-
-	const isNormalForest =
-		temperature >= -wierdness
-		&& temperature < wierdness
-		&& humidity >= 0
-		&& humidity < wierdness;
-
-	const isDenseForest =
-		temperature >= -wierdness
-		&& temperature < wierdness
-		&& humidity >= wierdness;
-
-	const isIcePlains =
-		temperature < -wierdness
-		&& humidity < 0;
-
-	const isIceForest =
-		temperature < -wierdness
-		&& humidity >= 0
-		&& humidity < wierdness;
-
-	const isDenseIceForest =
-		temperature < -wierdness
-		&& humidity >= wierdness;
-
-
-	if (!isLand) {
-		if (isSwamp && alternate > -0.7) {
-			return {
-				type: getTileId("swamp_water"),
-				humidity,
-				temperature,
-				alternate,
-			};
-		}
-
-		if ((isIcePlains || isIceForest || isDenseIceForest) && alternate > -0.8) {
-			return {
-				type: getTileId("ice"),
-				humidity,
-				temperature,
-				alternate,
-			};
-		}
-
-		return {
-			type: getTileId("water"),
-			humidity,
-			temperature,
-			alternate,
-		};
-	}
-
-	
-	if (isHotPlains || isColdPlains || isNormalForest || isDenseForest) {
-		return {
-			type: getTileId("grass"),
-			humidity,
-			temperature,
-			alternate,
-		};
-	}
-
-	if (isColdPlains || (alternate > -0.90 && (isIcePlains || isIceForest || isDenseIceForest))) {
-		return {
-			type: getTileId("cold_grass"),
-			humidity,
-			temperature,
-			alternate,
-		};
-	}
-
-	if (isIcePlains || isIceForest || isDenseIceForest) {
-		return {
-			type: getTileId("snow"),
-			humidity,
-			temperature,
-			alternate,
-		};
-	}
-
-	if (isDesert || (alternate > 0.9 && isSavanna)) {
-		return {
-			type: getTileId("sand"),
-			humidity,
-			temperature,
-			alternate,
-		};
-	}
-
-	if (isSavanna || isSwamp || isJungle) {
-		return {
-			type: getTileId("hot_grass"),
-			humidity,
-			temperature,
-			alternate,
-		};
-	}
-	
 	return {
-		type: getTileId("void"),
+		type,
 		humidity,
 		temperature,
 		alternate,
 	};
+}
+
+function getTileType(
+	config: WorldConfig,
+	isLand: boolean,
+	elevation: number,
+	temperature: number,
+	humidity: number,
+	wierdness: number,
+	alternate: number,
+): TileType {
+	const biome = getBiome(
+		config,
+		elevation,
+		temperature,
+		humidity,
+		wierdness,
+	);
+
+	if (!isLand) {
+		return getWater(biome, alternate);
+	}
+
+	const decoration = getDecoration(biome, humidity, alternate);
+	if (decoration !== "none") {
+		return getTileId(decoration);
+	}
+
+	const grassType = grassTypes.get(biome);
+	if (grassType === undefined) {
+		throw new Error("There is no grass type for this biome");
+	}
+
+	return grassType;
+}
+
+function getDecoration(
+	biome: Biome, 
+	humidity: number,
+	alternate: number,
+): DecorationType {
+	let chance = 0;
+	if (biome === "jungle" || biome === "dense_forest" || biome === "dense_ice_forest") {
+		chance += 0.15;
+	}
+
+	if (biome === "forest" || biome === "ice_forest" || biome === "swamp") {
+		chance += 0.05;
+	}
+
+	if (biome === "savanna" || biome === "hot_plains" || biome === "cold_plains" || biome === "ice_plains") {
+		chance += 0.02;
+	}
+
+	if (biome === "desert") {
+		chance = 0;
+	}
+
+	if (chance > (alternate + 1) / 2) {
+		return "tree";
+	}
+
+	return "none";
+}
+
+export function getBiome(
+	config: WorldConfig,
+	elevation: number,
+	temperature: number,
+	humidity: number,
+	wierdness: number,
+): Biome {
+	const isHot
+		= temperature >= wierdness;
+	const isWarm
+		= temperature < wierdness
+		&& temperature >= 0;
+	const isCold
+		= temperature < 0
+		&& temperature >= -wierdness;
+	const isIcy
+		= temperature < -wierdness;
+	
+	const isVeryHighHumid
+		= humidity >= wierdness;
+	const isHighHumid
+		= humidity >= 0
+		&& humidity < wierdness;
+	const isLowHumid
+		= humidity >= -wierdness
+		&& humidity < 0;
+	const isVeryLowHumid
+		= humidity < -wierdness;
+
+	const { oceaness, beachness } = config;
+	const isBeach =
+		(elevation >= oceaness / 2
+		&& elevation < oceaness / 2 + beachness)
+		|| (elevation < -oceaness / 2
+		&& elevation >= -oceaness / 2 - beachness);
+	
+	if (isBeach) {
+		if (isHot || isWarm) {
+			return "sand_beach";
+		}
+		if (isCold) {
+			return "pebble_beach";
+		}
+		if (isIcy) {
+			return "ice_beach";
+		}
+	}
+	
+	if (isVeryLowHumid) {
+		if (isHot) {
+			return "desert";
+		}
+		if (isWarm) {
+			return "hot_plains";
+		}
+		if (isCold) {
+			return "cold_plains";
+		}
+		if (isIcy) {
+			return "ice_plains";
+		}
+	}
+
+	if (isLowHumid) {
+		if (isHot) {
+			return "savanna";
+		}
+		if (isWarm) {
+			return "hot_plains";
+		}
+		if (isCold) {
+			return "cold_plains";
+		}
+		if (isIcy) {
+			return "ice_plains";
+		}
+	}
+
+	if (isHighHumid) {
+		if (isHot) {
+			return "swamp";
+		}
+		if (isWarm) {
+			return "forest";
+		}
+		if (isCold) {
+			return "forest";
+		}
+		if (isIcy) {
+			return "ice_forest";
+		}
+	}
+
+	if (isVeryHighHumid) {
+		if (isHot) {
+			return "jungle";
+		}
+		if (isWarm) {
+			return "dense_forest";
+		}
+		if (isCold) {
+			return "dense_forest";
+		}
+		if (isIcy) {
+			return "dense_ice_forest";
+		}
+	}
+
+	throw new Error("Could not determine biome type"); 
+}
+
+
+function getWater(biome: Biome, alternate: number): TileType {
+	if (biome === "swamp" && alternate > -0.7) {
+		return getTileId("swamp_water");
+	}
+
+	if (
+		(biome === "ice_plains"
+		|| biome === "ice_forest"
+		|| biome === "dense_ice_forest")
+		&& alternate > -0.8
+	) {
+		return getTileId("ice");
+	}
+
+	return getTileId("water");
 }
 

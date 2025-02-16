@@ -1,5 +1,6 @@
 import { ServerState, ServerUpdate } from "./server.js";
 import { Position } from "./world.js";
+import { createInventory, Inventory } from "./item.js";
 
 export type Player = {
 	colour: string;
@@ -8,6 +9,7 @@ export type Player = {
 		x: number;
 		y: number;
 	};
+	inventory: Inventory;
 	id: number;
 	isFlashlightEnabled: boolean;
 	aimDirection: number;
@@ -47,6 +49,7 @@ export function addPlayer(
 			x: 0,
 			y: 0,
 		},
+		inventory: createInventory(),
 		id,
 		isFlashlightEnabled: true,
 		keys: new Map(),

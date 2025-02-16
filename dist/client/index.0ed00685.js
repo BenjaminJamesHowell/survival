@@ -1154,6 +1154,7 @@ var _playerJs = require("./player.js");
 var _worldJs = require("./world.js");
 var _lightJs = require("./light.js");
 var _worldgenJs = require("./worldgen.js");
+var _itemJs = require("./item.js");
 function setupServer(config) {
     return {
         players: new Array(config.maxPlayers).fill(undefined),
@@ -1175,7 +1176,8 @@ function setupServer(config) {
             natural: {
                 intensity: 0.5
             }
-        }
+        },
+        droppedItems: []
     };
 }
 function serverTick(server) {
@@ -1217,6 +1219,34 @@ function playerTick(server, id) {
     player.velocity.y *= 0.9;
     player.position.x += player.velocity.x;
     player.position.y += player.velocity.y;
+    const pickupRadius = 5;
+    for(let i = 0; i < server.droppedItems.length; i++){
+        const droppedItem = server.droppedItems[i];
+        const xDiff = Math.abs(droppedItem.position.x - player.position.x);
+        const yDiff = Math.abs(droppedItem.position.y - player.position.y);
+        const diff = Math.sqrt(xDiff ** 2 + yDiff ** 2);
+        if (diff > pickupRadius) continue;
+        // Does the player already have this item type?
+        const stackableSlot = (0, _itemJs.getStackableInventorySlot)(player.inventory, droppedItem.type);
+        if (stackableSlot !== undefined) {
+            const slot = player.inventory[stackableSlot];
+            if (slot === undefined) throw new Error("This slot is empty.");
+            slot[0] += 1;
+            server.droppedItems.splice(i, 1);
+            break;
+        }
+        // Does the player have an empty inventory slot?
+        const emptySlot = (0, _itemJs.getEmptyInventorySlot)(player.inventory);
+        if (emptySlot !== undefined) {
+            server.droppedItems.splice(i, 1);
+            player.inventory[emptySlot] = [
+                1,
+                droppedItem.type
+            ];
+            break;
+        }
+        continue;
+    }
 }
 function getUpdate(server, id) {
     const player = server.players[id];
@@ -1232,6 +1262,7 @@ function getUpdate(server, id) {
         camera: player.position,
         lightSources: lightUpdates,
         tps: server.tick.tps,
+        inventory: player.inventory,
         time: {
             hours: server.time.hours,
             minutes: server.time.minutes
@@ -1245,13 +1276,14 @@ function receiveUpdate(server, id, update) {
     player.colour = update.colour;
 }
 
-},{"./player.js":"6OTSH","./world.js":"1L67l","./light.js":"jNGh5","./worldgen.js":"3NpdK","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"6OTSH":[function(require,module,exports) {
+},{"./player.js":"6OTSH","./world.js":"1L67l","./light.js":"jNGh5","./worldgen.js":"3NpdK","./item.js":"d970P","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"6OTSH":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "addPlayer", ()=>addPlayer);
 parcelHelpers.export(exports, "removePlayer", ()=>removePlayer);
 parcelHelpers.export(exports, "getPlayerUpdates", ()=>getPlayerUpdates);
 parcelHelpers.export(exports, "kickPlayer", ()=>kickPlayer);
+var _itemJs = require("./item.js");
 function addPlayer(server, pushMessage, closeConnection) {
     let id = 0;
     for(id = 0; id < server.players.length; id++){
@@ -1268,6 +1300,7 @@ function addPlayer(server, pushMessage, closeConnection) {
             x: 0,
             y: 0
         },
+        inventory: (0, _itemJs.createInventory)(),
         id,
         isFlashlightEnabled: true,
         keys: new Map(),
@@ -1301,6 +1334,36 @@ function kickPlayer(server, player) {
     player.pushMessage(message);
     player.closeConnection();
     removePlayer(server, player);
+}
+
+},{"./item.js":"d970P","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"d970P":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "createInventory", ()=>createInventory);
+parcelHelpers.export(exports, "dropItem", ()=>dropItem);
+parcelHelpers.export(exports, "getStackableInventorySlot", ()=>getStackableInventorySlot);
+parcelHelpers.export(exports, "getEmptyInventorySlot", ()=>getEmptyInventorySlot);
+function createInventory() {
+    return new Array(10).fill(undefined);
+}
+function dropItem(server, type, position) {
+    server.droppedItems.push({
+        type,
+        position
+    });
+}
+function getStackableInventorySlot(inventory, searchType) {
+    for(let i = 0; i < inventory.length; i++){
+        const slotItemType = inventory[i]?.[1];
+        if (slotItemType === searchType) return i;
+    }
+    return undefined;
+}
+function getEmptyInventorySlot(inventory) {
+    for(let i = 0; i < inventory.length; i++){
+        if (inventory[i] === undefined) return i;
+    }
+    return undefined;
 }
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"jNGh5":[function(require,module,exports) {

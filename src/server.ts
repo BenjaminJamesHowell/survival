@@ -6,6 +6,7 @@ import { EncodedWorldUpdate, Position, WorldConfig, WorldState, encodeWorldUpdat
 import { LightSources, lightTick, getLightUpdates, LightUpdates  } from "./light.js";
 import { generateWorld } from "./worldgen.js";
 import { ClientUpdate } from "./client.js";
+import { Inventory, DroppedItem, getEmptyInventorySlot, getStackableInventorySlot } from "./item.js";
 
 // Server types
 export type ServerState = {
@@ -23,6 +24,7 @@ export type ServerState = {
 		tps: number;
 	};
 	lightSources: LightSources;
+	droppedItems: DroppedItem[];
 };
 
 export type ServerConfig = {
@@ -48,6 +50,7 @@ export type OkServerUpdate = {
 		minutes: number;
 	};
 	tps: number;
+	inventory: Inventory;
 	// alerts: undefined[];
 };
 export type ErrorServerUpdate = {
@@ -78,6 +81,7 @@ export function setupServer(config: ServerConfig): ServerState {
 				intensity: 0.5,
 			},
 		},
+		droppedItems: [],
 	};
 }
 
@@ -142,6 +146,47 @@ function playerTick(server: ServerState, id: number) {
 
 	player.position.x += player.velocity.x;
 	player.position.y += player.velocity.y;
+
+	const pickupRadius = 5;
+
+	for (let i = 0; i < server.droppedItems.length; i++) {
+		const droppedItem = server.droppedItems[i];
+		const xDiff = Math.abs(droppedItem.position.x - player.position.x);
+		const yDiff = Math.abs(droppedItem.position.y - player.position.y);
+		
+		const diff = Math.sqrt(xDiff ** 2 + yDiff ** 2);
+
+		if (diff > pickupRadius) {
+			continue;
+		}
+
+		// Does the player already have this item type?
+		const stackableSlot = getStackableInventorySlot(player.inventory, droppedItem.type);
+		if (stackableSlot !== undefined) {
+			const slot = player.inventory[stackableSlot];
+			if (slot === undefined) {
+				throw new Error("This slot is empty.");
+			}
+			slot[0] += 1;
+			server.droppedItems.splice(i, 1);
+
+			// Only 1 item can be picked up per tick
+			break;
+		}
+
+		// Does the player have an empty inventory slot?
+		const emptySlot = getEmptyInventorySlot(player.inventory);
+		if (emptySlot !== undefined) {
+			server.droppedItems.splice(i, 1);
+			player.inventory[emptySlot] = [1, droppedItem.type];
+
+			// Only 1 item can be picked up per tick
+			break;
+		}
+
+		// Try to pick up a different item.
+		continue;
+	}
 }
 
 export function getUpdate(server: ServerState, id: number): ServerUpdate {
@@ -163,6 +208,7 @@ export function getUpdate(server: ServerState, id: number): ServerUpdate {
 		camera: player.position,
 		lightSources: lightUpdates,
 		tps: server.tick.tps,
+		inventory: player.inventory,
 		time: {
 			hours: server.time.hours,
 			minutes: server.time.minutes,
